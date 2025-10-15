@@ -289,21 +289,20 @@ void tfm_arch_config_extensions(void)
 {
 #if defined(CONFIG_TFM_ENABLE_CP10CP11)
     /*
-     * Enable SPE privileged and unprivileged access to the FP Extension.
-     * Note: On Armv8-M, if Non-secure access to the FPU is needed, Secure
-     * access to the FPU must be enabled first in order to avoid No Coprocessor
-     * (NOCP) usage fault when a Non-secure to Secure service call is
-     * interrupted while CONTROL.FPCA=1 is set by Non-secure. This is needed
-     * even if SPE will not use the FPU directly.
+     * Enable privileged and unprivileged access to the FP Extension for SPE and
+     * NSPE located on the same core. Both SPE and NSPE must enable FPU for proper
+     * handling of FPU registers even if one of them does not use FPU. If some
+     * NSPE is located in other core than SPE core, FPU must be enabled there only
+     * if it is used
      */
-    SCB->CPACR |= (3U << 10U*2U)     /* enable CP10 full access */
-                  | (3U << 11U*2U);  /* enable CP11 full access */
+    SCB->CPACR    |= (3U << 10U*2U)    /* enable CP10 full access for SPE */
+                  | (3U << 11U*2U);    /* enable CP11 full access for SPE */
+    SCB_NS->CPACR |= (3U << 10U*2U)    /* enable CP10 full access for NSPE */
+                  |  (3U << 11U*2U);   /* enable CP11 full access for NSPE */
     __DSB();
     __ISB();
     /*
      * Permit Non-secure access to the Floating-point Extension.
-     * Note: It is still necessary to set CPACR_NS to enable the FP Extension
-     * in the NSPE. This configuration is left to NS privileged software.
      */
     SCB->NSACR |= SCB_NSACR_CP10_Msk | SCB_NSACR_CP11_Msk;
 #elif defined(CONFIG_TFM_DISABLE_CP10CP11)

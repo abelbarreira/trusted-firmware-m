@@ -86,10 +86,9 @@ The following CMake configurations configure ``COMPILER_CP_FLAG`` in TF-M SPE.
     set to ``hard``.
 
 .. Note::
-    If you build TF-M SPE with ``CONFIG_TFM_ENABLE_FP=on`` and provide your own
-    NSPE application, your own NSPE **must** take care of enabling floating point
-    coprocessors CP10 and CP11 on the NS side to avoid aforementioned NOCP usage
-    fault.
+    If TF-M SPE is built with ``CONFIG_TFM_ENABLE_FP=on``, then SPE takes care of
+    enabling floating point coprocessors CP10 and CP11 on the NS side. This is
+    done to avoid NOCP usage fault.
 
 * ``CONFIG_TFM_LAZY_STACKING`` is used to enable/disable lazy stacking
   feature. This feature is only valid for FP hardware ABI type.
