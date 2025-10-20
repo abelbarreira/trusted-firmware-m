@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 
+#include "os_wrapper/kernel.h"
 #include "os_wrapper/mutex.h"
 
 #include "tfm_ns_interface.h"
@@ -33,14 +34,23 @@ int32_t tfm_ns_interface_dispatch(veneer_fn fn,
 {
     int32_t result;
 
-    /* TFM request protected by NS lock */
-    while (os_wrapper_mutex_acquire(ns_lock_handle, OS_WRAPPER_WAIT_FOREVER)
-            != OS_WRAPPER_SUCCESS) {
-    }
+    if (os_wrapper_is_kernel_started()) {
+        /* TFM request protected by NS lock */
+        while (os_wrapper_mutex_acquire(ns_lock_handle, OS_WRAPPER_WAIT_FOREVER)
+                != OS_WRAPPER_SUCCESS) {
+        }
 
-    result = fn(arg0, arg1, arg2, arg3);
+        result = fn(arg0, arg1, arg2, arg3);
 
-    while (os_wrapper_mutex_release(ns_lock_handle) != OS_WRAPPER_SUCCESS) {
+        while (os_wrapper_mutex_release(ns_lock_handle) != OS_WRAPPER_SUCCESS) {
+        }
+    } else {
+        /* Mutex may not be acquirable if kernel has not started. In such case
+         * mutex lock is not called. This is safe because if kernel is not
+         * running then no multithread environment exists, thus no multithread
+         * safety is needed.
+         */
+        result = fn(arg0, arg1, arg2, arg3);
     }
 
     return result;
