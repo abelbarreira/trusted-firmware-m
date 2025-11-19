@@ -995,7 +995,7 @@ psa_status_t fwu_metadata_provision(void)
 static uint8_t get_fwu_image_state(
         struct fwu_metadata *metadata,
         struct fwu_private_metadata *priv_metadata,
-	uint32_t fwu_image_index)
+        uint32_t fwu_image_index)
 {
     FWU_LOG_MSG("%s: enter\n\r", __func__);
 
@@ -1305,12 +1305,12 @@ psa_status_t corstone1000_fwu_host_ack(void)
 
         ret = PSA_SUCCESS; /* nothing to be done */
 
-	for (int i = 0; i < NR_OF_IMAGES_IN_FW_BANK; i++) {
-            fmp_set_image_info(&fwu_image[i].image_guid,
-                    priv_metadata.fmp_version[i],
-                    priv_metadata.fmp_last_attempt_version[i],
-                    priv_metadata.fmp_last_attempt_status[i]);
-	}
+        for (int i = 0; i < NR_OF_IMAGES_IN_FW_BANK; i++) {
+                fmp_set_image_info(&fwu_image[i].image_guid,
+                        priv_metadata.fmp_version[i],
+                        priv_metadata.fmp_last_attempt_version[i],
+                        priv_metadata.fmp_last_attempt_status[i]);
+        }
 
         goto out;
 
@@ -1322,13 +1322,13 @@ psa_status_t corstone1000_fwu_host_ack(void)
 
         /* firmware update failed, revert back to previous bank */
 
-	for (int i = 0; i < NR_OF_IMAGES_IN_FW_BANK; i++) {
+        for (int i = 0; i < NR_OF_IMAGES_IN_FW_BANK; i++) {
             if(get_fwu_image_state(&_metadata, &priv_metadata, i) == PSA_FWU_TRIAL) {
                 priv_metadata.fmp_last_attempt_version[i] =
                  _metadata.fw_desc.img_entry[i].img_props[_metadata.active_index].version;
 
                 priv_metadata.fmp_last_attempt_status[i] = LAST_ATTEMPT_STATUS_ERROR_UNSUCCESSFUL;
-	    }
+            }
         }
         ret = fwu_select_previous(&_metadata, &priv_metadata);
 
@@ -1455,14 +1455,14 @@ psa_status_t fwu_stage_nv_counter(enum fwu_nv_counter_index_t index,
 
 psa_status_t corstone1000_fwu_flash_image(void)
 {
-	return PSA_SUCCESS;
+    return PSA_SUCCESS;
 }
 
 /* Verify if image index is valid or not */
 bool is_image_index_valid(uint8_t fwu_image_index) {
     return (fwu_image_index != FWU_FAKE_IMAGE_INDEX &&
             fwu_image_index != FWU_IMAGE_INDEX_ESRT &&
-	    fwu_image_index < FWU_COMPONENT_NUMBER);
+            fwu_image_index < FWU_COMPONENT_NUMBER);
 }
 
 static psa_status_t get_esrt_data(struct fwu_esrt_data_wrapper *esrt)
@@ -1585,8 +1585,8 @@ static void fmp_header_image_info_init()
     for (int i=0; i<FWU_COMPONENT_NUMBER; i++)
     {
         fmp_header_image_info[i].fmp_hdr_size_recvd = 0;
-	fmp_header_image_info[i].image_size_recvd = 0;
-	memset(&fmp_header_image_info[i].fmp_hdr, 0, sizeof(fmp_header_image_info[i].fmp_hdr));
+        fmp_header_image_info[i].image_size_recvd = 0;
+        memset(&fmp_header_image_info[i].fmp_hdr, 0, sizeof(fmp_header_image_info[i].fmp_hdr));
     }
 }
 
@@ -1598,7 +1598,7 @@ static psa_status_t erase_staging_area(struct fwu_metadata* metadata, psa_fwu_co
 
     if (!is_image_index_valid(component)) {
         FWU_LOG_MSG("%s: Invalid Component received \n\r", __func__);
-	return PSA_ERROR_GENERIC_ERROR;
+        return PSA_ERROR_GENERIC_ERROR;
     }
 
     uint32_t active_index = metadata->active_index;
@@ -1691,7 +1691,7 @@ psa_status_t parse_fmp_header(psa_fwu_component_t component, const void *block, 
                 (sizeof(fmp_header_image_info[component].fmp_hdr) - fmp_header_image_info[component].fmp_hdr_size_recvd));
 
         fmp_header_image_info[component].fmp_hdr_size_recvd = sizeof(fmp_header_image_info[component].fmp_hdr);
-	return PSA_SUCCESS;
+        return PSA_SUCCESS;
     }
 
 }
@@ -1738,7 +1738,7 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
         }
         if (ret == PSA_SUCCESS) {
             block_size -= fmp_header_image_info[fwu_image_index].fmp_hdr_size_recvd;
-	    block += fmp_header_image_info[fwu_image_index].fmp_hdr_size_recvd;
+            block += fmp_header_image_info[fwu_image_index].fmp_hdr_size_recvd;
         }
     }
 
@@ -1774,7 +1774,7 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
     if (fw_version <=
                 _metadata.fw_desc.img_entry[fwu_image_index].img_props[active_index].version)
     {
-	/* Version is extracted from the fmp_payload_header */
+        /* Version is extracted from the fmp_payload_header */
         priv_metadata.fmp_last_attempt_version[fwu_image_index] = fmp_header_image_info[fwu_image_index].fmp_hdr.fw_version;
         priv_metadata.fmp_last_attempt_status[fwu_image_index] = LAST_ATTEMPT_STATUS_ERROR_UNSUCCESSFUL;
         private_metadata_write(&priv_metadata);
@@ -1785,8 +1785,8 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
                 priv_metadata.fmp_last_attempt_status[fwu_image_index]);
 
         FWU_LOG_MSG("ERROR: %s: version error\n\r",__func__);
-	ret = PSA_OPERATION_INCOMPLETE;
-	goto out;
+        ret = PSA_OPERATION_INCOMPLETE;
+        goto out;
     }
 
     if (active_index == BANK_0) {
@@ -1828,7 +1828,7 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
                 priv_metadata.fmp_last_attempt_version[fwu_image_index],
                 priv_metadata.fmp_last_attempt_status[fwu_image_index]);
         ret = PSA_OPERATION_INCOMPLETE;
-	goto out;
+        goto out;
     }
     else {
         ret = PSA_SUCCESS;
@@ -1871,7 +1871,7 @@ static psa_status_t fwu_update_metadata(const psa_fwu_component_t *candidates, u
     } else {
         FWU_LOG_MSG("ERROR: %s: active_index %d\n\r",__func__,active_index);
         ret = PSA_ERROR_DATA_INVALID;
-	goto out;
+        goto out;
     }
 
     _metadata.active_index = previous_active_index;
@@ -1881,7 +1881,7 @@ static psa_status_t fwu_update_metadata(const psa_fwu_component_t *candidates, u
     /* Change system state to trial bank state */
     for (int i = 0; i < number; i++) {
         /* Skip image with index 0 and ESRT image */
-	if(!is_image_index_valid(candidates[i])) {
+        if(!is_image_index_valid(candidates[i])) {
             FWU_LOG_MSG("%s: Invalid image index received \n\r", __func__);
             continue;
         }
@@ -1946,7 +1946,7 @@ static psa_status_t copy_image_from_other_bank(int image_index,
         }
 
         offset_read += data_size;
-	
+
         /* write image data to flash */
         data_transferred_count = FWU_METADATA_FLASH_DEV.ProgramData(offset_write, data, data_size);
         if (data_transferred_count < 0) {
@@ -1961,7 +1961,7 @@ static psa_status_t copy_image_from_other_bank(int image_index,
         }
 
         offset_write += data_size;
-	remaining_size -= data_size;
+        remaining_size -= data_size;
     }
 
     FWU_LOG_MSG("%s: exit \n\r", __func__);
@@ -2004,8 +2004,8 @@ static psa_status_t maintain_bank_consistency(void)
         ret = copy_image_from_other_bank(i, active_index, previous_active_index);
         if(ret) {
             FWU_LOG_MSG("ERROR: %s: copy_image_from_other_bank failed for Image : %d\n\r",__func__, i);
-       	    return ret;
-	}
+            return ret;
+        }
 
         _metadata.fw_desc.img_entry[i].img_props[previous_active_index].version =
          _metadata.fw_desc.img_entry[i].img_props[active_index].version;
@@ -2110,7 +2110,7 @@ psa_status_t fwu_bootloader_mark_image_accepted(const psa_fwu_component_t *trial
 
     /* firmware update successful */
     for (int i = 0; i < number; i++) {
-	if(!is_image_index_valid(trials[i])) {
+    if(!is_image_index_valid(trials[i])) {
             FWU_LOG_MSG("%s: Invalid image index received \n\r", __func__);
             continue;
         }
@@ -2201,7 +2201,7 @@ psa_status_t fwu_bootloader_reject_staged_image(psa_fwu_component_t component)
     } else {
         FWU_LOG_MSG("ERROR: %s: active_index %d\n\r",__func__,active_index);
         ret = PSA_ERROR_GENERIC_ERROR;
-	goto out;
+        goto out;
     }
 
     image_offset = bank_offset + fwu_image[image_index].image_offset;
@@ -2308,11 +2308,11 @@ psa_status_t fwu_bootloader_get_image_info(psa_fwu_component_t component,
         ret = get_esrt_data(&esrt);
         if (ret) {
             FWU_LOG_MSG("%s: ERROR : Unable to populate ESRT \n\r", __func__);
-	    goto out;
+            goto out;
         }
 
         memcpy(&info->impl.candidate_digest, &esrt, esrt_size);
-	if (query_state) {
+        if (query_state) {
             info->state = PSA_FWU_READY;
         }
     }

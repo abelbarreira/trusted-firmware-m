@@ -240,7 +240,7 @@ target_include_directories(platform_bl1_1_interface
         ${PLATFORM_DIR}/ext/target/arm/drivers/usart/pl011
         $<$<BOOL:${CRYPTO_HW_ACCELERATOR}>:${CMAKE_SOURCE_DIR}/platform/ext/accelerator/interface>
         ${PLATFORM_DIR}/ext/accelerator/cc312/
-	${CMAKE_SOURCE_DIR}/lib/fih/inc/
+        ${CMAKE_SOURCE_DIR}/lib/fih/inc/
 )
 
 target_link_libraries(platform_bl1_1
@@ -301,7 +301,7 @@ target_include_directories(platform_bl1_2
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/n25q256a/
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/sst26vf064b/
         ${PLATFORM_DIR}/ext/accelerator/cc312/
-	${CMAKE_SOURCE_DIR}/interface/include # for psa/error.h
+        ${CMAKE_SOURCE_DIR}/interface/include # for psa/error.h
 )
 
 #========================= Platform BL2 =======================================#
@@ -409,7 +409,7 @@ target_include_directories(platform_bl2
         ${MCUBOOT_PATH}/boot/bootutil/include # for fault_injection_hardening.h only
         ${CMAKE_BINARY_DIR}/bl2/ext/mcuboot # for mcuboot_config.h only
         $<BUILD_INTERFACE:${BL2_SOURCE}/ext/mcuboot/include>
-	${CMAKE_SOURCE_DIR}/interface/include # for psa/error.h
+        ${CMAKE_SOURCE_DIR}/interface/include # for psa/error.h
 )
 
 #========================= ns_agent_mailbox ===================================#
