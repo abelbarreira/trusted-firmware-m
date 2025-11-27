@@ -69,6 +69,7 @@ endif()
 
 add_subdirectory(lib/backtrace)
 
+add_subdirectory(lib/efi_guid)
 add_subdirectory(lib/fih)
 add_subdirectory(lib/tfm_log)
 add_subdirectory(lib/tfm_log_unpriv)
