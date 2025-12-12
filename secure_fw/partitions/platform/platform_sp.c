@@ -159,7 +159,7 @@ static psa_status_t platform_sp_ioctl_psa_api(const psa_msg_t *msg)
     uint8_t input_buffer[PLATFORM_SERVICE_INPUT_BUFFER_SIZE] = {0};
     uint8_t output_buffer[PLATFORM_SERVICE_OUTPUT_BUFFER_SIZE] = {0};
     tfm_platform_ioctl_req_t request = 0;
-    enum tfm_platform_err_t ret = TFM_PLATFORM_ERR_SYSTEM_ERROR;
+    psa_status_t ret = PSA_ERROR_GENERIC_ERROR;
     int num = 0;
     uint32_t in_len = PSA_MAX_IOVEC;
     uint32_t out_len = PSA_MAX_IOVEC;
@@ -173,24 +173,23 @@ static psa_status_t platform_sp_ioctl_psa_api(const psa_msg_t *msg)
         out_len--;
     }
 
-    if ((in_len < 1) || (in_len > 2) ||
-        (out_len > 1)) {
-        return TFM_PLATFORM_ERR_SYSTEM_ERROR;
+    if ((in_len < 1) || (in_len > 2) || (out_len > 1)) {
+        return PSA_ERROR_PROGRAMMER_ERROR;
     }
 
     num = psa_read(msg->handle, 0, &request, sizeof(request));
     if (num != sizeof(request)) {
-        return (enum tfm_platform_err_t) PSA_ERROR_PROGRAMMER_ERROR;
+        return PSA_ERROR_PROGRAMMER_ERROR;
     }
 
     if (in_len > 1) {
         input_size = msg->in_size[1];
         if (input_size > PLATFORM_SERVICE_INPUT_BUFFER_SIZE) {
-            return (enum tfm_platform_err_t) PSA_ERROR_BUFFER_TOO_SMALL;
+            return PSA_ERROR_BUFFER_TOO_SMALL;
         }
         num = psa_read(msg->handle, 1, &input_buffer, msg->in_size[1]);
         if (num != input_size) {
-            return (enum tfm_platform_err_t) PSA_ERROR_PROGRAMMER_ERROR;
+            return PSA_ERROR_PROGRAMMER_ERROR;
         }
         invec.base = input_buffer;
         invec.len = input_size;
@@ -199,7 +198,7 @@ static psa_status_t platform_sp_ioctl_psa_api(const psa_msg_t *msg)
 
     if (out_len > 0) {
         if (msg->out_size[0] > PLATFORM_SERVICE_OUTPUT_BUFFER_SIZE) {
-            return (enum tfm_platform_err_t) PSA_ERROR_PROGRAMMER_ERROR;
+            return PSA_ERROR_PROGRAMMER_ERROR;
         }
         outvec.base = output_buffer;
         outvec.len = msg->out_size[0];
@@ -207,7 +206,7 @@ static psa_status_t platform_sp_ioctl_psa_api(const psa_msg_t *msg)
     }
 
     TFM_COVERITY_DEVIATE_LINE(MISRA_C_2023_Rule_11_5, "It's PSA API design to use pointer to void")
-    ret = tfm_platform_hal_ioctl(request, input, output);
+    ret = (psa_status_t)tfm_platform_hal_ioctl(request, input, output);
 
     if (output != NULL) {
         psa_write(msg->handle, 0, outvec.base, outvec.len);
