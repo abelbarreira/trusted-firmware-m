@@ -1701,11 +1701,16 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
                                        size_t block_size)
 {
 
+    FWU_LOG_MSG("%s: enter: block_offset = %u, block = 0x%p, block_size = %u\n\r"
+                , __func__, block_offset, block, block_size);
+
     if (block == NULL) {
+        FWU_LOG_MSG("%s: exit: block is NULL\n\r", __func__);
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
     if (!is_initialized) {
+        FWU_LOG_MSG("%s: exit: not initialised\n\r", __func__);
         return PSA_ERROR_BAD_STATE;
     }
 
@@ -1726,9 +1731,6 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
     uint32_t fw_version;
     uint8_t fwu_image_index = component - FWU_FAKE_IMAGES_INDEX_COUNT;
     struct fwu_private_metadata priv_metadata;
-
-    FWU_LOG_MSG("%s: enter: block_offset = %u, block = 0x%p, block_size = %u\n\r"
-                , __func__, block_offset, block, block_size);
 
     /* Parse the incoming block to make sure complete FMP header is received */
     if (fmp_header_image_info[fwu_image_index].fmp_hdr_size_recvd != sizeof(fmp_header_image_info[fwu_image_index].fmp_hdr)) {
