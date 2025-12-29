@@ -67,6 +67,10 @@ if(BL2)
     add_subdirectory(bl2)
 endif()
 
+if(PLATFORM_GPT_LIBRARY)
+    add_subdirectory(lib/gpt)
+endif()
+
 add_subdirectory(lib/backtrace)
 
 add_subdirectory(lib/efi_guid)

@@ -148,6 +148,8 @@ set(PLATFORM_DEFAULT_SYSTEM_RESET_HALT  ON          CACHE BOOL      "Use default
 set(PLATFORM_DEFAULT_IMAGE_SIGNING      ON          CACHE BOOL      "Use default image signing implementation")
 set(PLATFORM_DEFAULT_PROV_LINKER_SCRIPT ON          CACHE BOOL      "Use default provisioning linker script")
 
+set(PLATFORM_GPT_LIBRARY                OFF         CACHE BOOL      "Whether to build the GPT library or not")
+
 set(TFM_DUMMY_PROVISIONING              ON          CACHE BOOL      "Provision with dummy values. NOT to be used in production")
 set(PROFILE_DEFINITION_LARGE            OFF         CACHE BOOL      "Use the 48 byte 'profile_definition' declaration used between v2.2.0 and v2.2.2")
 
