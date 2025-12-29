@@ -1799,7 +1799,8 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
         bank_offset = BANK_0_PARTITION_OFFSET;
     } else {
         FWU_LOG_MSG("ERROR: %s: active_index %d\n\r",__func__,active_index);
-        return PSA_ERROR_DATA_INVALID;
+        ret = PSA_ERROR_DATA_INVALID;
+        goto out;
     }
 
     image_offset = bank_offset + fwu_image[fwu_image_index].image_offset;
@@ -2006,7 +2007,7 @@ static psa_status_t maintain_bank_consistency(void)
         ret = copy_image_from_other_bank(i, active_index, previous_active_index);
         if(ret) {
             FWU_LOG_MSG("ERROR: %s: copy_image_from_other_bank failed for Image : %d\n\r",__func__, i);
-            return ret;
+            goto out;
         }
 
         _metadata.fw_desc.img_entry[i].img_props[previous_active_index].version =
