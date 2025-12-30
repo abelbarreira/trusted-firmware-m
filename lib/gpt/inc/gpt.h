@@ -230,6 +230,14 @@ psa_status_t gpt_validate(bool is_primary);
 psa_status_t gpt_restore(bool is_primary);
 
 /**
+ * \brief Defragments the GPT, ensuring free space becomes contiguous.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O failure.
+ */
+psa_status_t gpt_defragment(void);
+
+/**
  * \brief Reads the GPT header from the second block (LBA 1).
  *
  * \param[in] flash_driver Driver used to perform I/O.

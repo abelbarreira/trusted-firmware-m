@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -225,6 +226,7 @@ static bool gpt_entry_cmp_name(const struct gpt_entry_t *entry, const void *name
 static bool gpt_entry_cmp_type(const struct gpt_entry_t *entry, const void *type);
 static psa_status_t validate_table(struct gpt_t *table, bool is_primary);
 static psa_status_t restore_table(struct gpt_t *restore_from, bool is_primary);
+static psa_status_t sort_partition_array(struct gpt_t *table);
 
 /* PUBLIC API FUNCTIONS */
 
@@ -817,6 +819,66 @@ psa_status_t gpt_restore(bool is_primary)
     } else {
         return restore_table(&primary_gpt, true);
     }
+}
+
+psa_status_t gpt_defragment(void)
+{
+    /* First, sort the partition array according to start LBA. This means that
+     * moving partitions towards the start of the flash sequentially is safe
+     * and will not result in lost data.
+     */
+    psa_status_t ret = sort_partition_array(&primary_gpt);
+    if (ret != PSA_SUCCESS) {
+        WARN("Unable to defragment flash!\n");
+        return ret;
+    }
+
+    uint64_t prev_end = primary_gpt.header.first_lba;
+    struct gpt_entry_t entry;
+
+    for (uint32_t i = 0; i < primary_gpt.num_used_partitions; ++i) {
+        ret = read_entry_from_flash(&primary_gpt, i, &entry);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+
+        /* Move to be next to previous entry. Continue if already where it
+         * needs to be.
+         */
+        if (prev_end == entry.start) {
+            prev_end = entry.end + 1;
+            continue;
+        }
+
+        const uint64_t num_blocks = entry.end - entry.start + 1;
+        ret = move_partition(entry.start, prev_end, num_blocks);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+
+        /* Update header information */
+        entry.start = prev_end;
+        entry.end = entry.start + num_blocks - 1;
+        prev_end = entry.end + 1;
+
+        /* Write the entry change, skipping header update until every entry
+         * written
+         */
+        ret = write_entry(i, &entry, true);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+    }
+
+    /* Write everything to flash after defragmentation if not done so already.
+     * The previous loop will write the last entry to the LBA buffer, which may
+     * or not may not be flushed
+     */
+    if (write_buffered) {
+        return flush_lba_buf();
+    }
+
+    return update_header(primary_gpt.num_used_partitions);
 }
 
 /* Initialises GPT from first block. */
@@ -1531,6 +1593,134 @@ static psa_status_t restore_table(struct gpt_t *restore_from, bool is_primary)
     INFO("Successfully restored %s GPT table\n", is_primary ? "backup" : "primary");
 
     return 0;
+}
+
+/* Comparison function to pass to qsort */
+static int cmp_u64(const void *a, const void *b)
+{
+    const uint64_t *a_u64 = (const uint64_t *)a;
+    const uint64_t *b_u64 = (const uint64_t *)b;
+    return (*a_u64 > *b_u64) - (*a_u64 < *b_u64);
+}
+
+/* bsearch but returns the index rather than the item */
+static int64_t bsearch_index(uint64_t arr[], uint32_t len, uint64_t key)
+{
+    uint32_t l = 0;
+    uint32_t r = len;
+
+    while (l < r) {
+        uint32_t m = l + (r - l) / 2;
+        uint64_t item = arr[m];
+
+        if (item < key) {
+            l = m + 1;
+        } else if (item > key) {
+            r = m;
+        } else {
+            return (int64_t)m;
+        }
+    }
+
+    return -1;
+}
+
+/* Sorts the partition array for the given table by the start LBA for each
+ * partition. This makes defragmentation easier.
+ */
+static psa_status_t sort_partition_array(struct gpt_t *table)
+{
+    /* To avoid as much I/O as possible, the LBA's for each entry are sorted in
+     * memory and then the entries rearranged on flash after
+     */
+    uint64_t lba_arr[table->num_used_partitions];
+    psa_status_t ret;
+    for (uint32_t i = 0; i < table->num_used_partitions; ++i) {
+        struct gpt_entry_t entry;
+        ret = read_entry_from_flash(table, i, &entry);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+        lba_arr[i] = entry.start;
+    }
+
+    qsort(lba_arr, table->num_used_partitions, sizeof(uint64_t), cmp_u64);
+
+    /* Now read and place the entries in the correct spot, starting with the
+     * first. Each entry is dealt with as it is encountered. When an entry is
+     * found and already in the correct spot, the next smallest index not yet
+     * handled becomes the next.
+     */
+    struct gpt_entry_t saved_entry = {0};
+    struct gpt_entry_t curr_entry;
+    uint8_t handled_indices[table->num_used_partitions];
+    memset(handled_indices, 0, table->num_used_partitions);
+
+    ret = read_entry_from_flash(table, 0, &curr_entry);
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+
+    for (uint32_t i = 0; i < table->num_used_partitions; ++i) {
+        const int64_t new_index = bsearch_index(
+                lba_arr,
+                table->num_used_partitions,
+                curr_entry.start);
+        if (new_index < 0) {
+            ERROR("Encountered unknown partition entry!\n");
+            return PSA_ERROR_STORAGE_FAILURE;
+        }
+
+        /* For final entry, just write it out */
+        if (i == table->num_used_partitions - 1) {
+            ret = write_entry((uint32_t)new_index, &curr_entry, false);
+            if (ret != PSA_SUCCESS) {
+                return ret;
+            }
+            break;
+        }
+
+        /* Replace the entry in the new_index place with the current entry */
+        ret = read_entry_from_flash(table, (uint32_t)new_index, &saved_entry);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+
+        struct efi_guid_t saved_guid = saved_entry.unique_guid;
+        struct efi_guid_t curr_guid = curr_entry.unique_guid;
+        if (efi_guid_cmp(&saved_guid, &curr_guid) == 0) {
+            /* This entry is already where it needs to be, so try the smallest
+             * index not yet handled next
+             */
+            handled_indices[new_index] = 1;
+            uint32_t next_entry = 0;
+            while(next_entry < table->num_used_partitions && handled_indices[next_entry]) {
+                ++next_entry;
+            }
+
+            if (next_entry == table->num_used_partitions) {
+                /* Done everything */
+                break;
+            }
+
+            ret = read_entry_from_flash(table, next_entry, &saved_entry);
+            if (ret != PSA_SUCCESS) {
+                return ret;
+            }
+        } else {
+            /* Write, skipping header update until very end */
+            ret = write_entry((uint32_t)new_index, &curr_entry, true);
+            if (ret != PSA_SUCCESS) {
+                return ret;
+            }
+        }
+
+        /* Ready up for the next loop */
+        curr_entry = saved_entry;
+        handled_indices[new_index] = 1;
+    }
+
+    return PSA_SUCCESS;
 }
 
 /* Converts unicode string to valid ascii */

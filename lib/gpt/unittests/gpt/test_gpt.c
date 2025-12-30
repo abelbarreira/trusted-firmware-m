@@ -504,6 +504,13 @@ void test_gpt_restore_should_failToRestoreWhenBackupIsBad(void)
     TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_restore(true));
 }
 
+void test_gpt_defragment_should_succeedWhenNoIOFailure(void)
+{
+    setup_valid_gpt();
+
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_defragment());
+}
+
 void test_gpt_entry_create_should_createNewEntry(void)
 {
     /* Add an entry. It must not overlap with an existing entry and must also
