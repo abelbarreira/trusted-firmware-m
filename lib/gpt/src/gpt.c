@@ -223,6 +223,8 @@ static psa_status_t mbr_load(struct mbr_t *mbr);
 static bool gpt_entry_cmp_guid(const struct gpt_entry_t *entry, const void *guid);
 static bool gpt_entry_cmp_name(const struct gpt_entry_t *entry, const void *name);
 static bool gpt_entry_cmp_type(const struct gpt_entry_t *entry, const void *type);
+static psa_status_t validate_table(struct gpt_t *table, bool is_primary);
+static psa_status_t restore_table(struct gpt_t *restore_from, bool is_primary);
 
 /* PUBLIC API FUNCTIONS */
 
@@ -745,6 +747,76 @@ psa_status_t gpt_entry_remove(const struct efi_guid_t *guid)
     ret = update_header(primary_gpt.num_used_partitions);
 
     return ret;
+}
+
+psa_status_t gpt_validate(bool is_primary)
+{
+    if (!is_primary && (backup_gpt_lba == 0 || backup_gpt_array_lba == 0)) {
+        ERROR("Backup GPT location unknown!\n");
+        return PSA_ERROR_STORAGE_FAILURE;
+    }
+
+    /* Flush and invalidate the in-memory buffer before attempting to validate
+     * a table. The in-memory header needs to be updated if the flushed LBA was
+     * part of the entry array
+     */
+    psa_status_t ret;
+    if (write_buffered) {
+        ret = flush_lba_buf();
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+        write_buffered = false;
+    }
+    cached_lba = 0;
+
+    if (is_primary) {
+        return validate_table(&primary_gpt, true);
+    } else {
+        struct gpt_t backup_gpt;
+        ret = read_table_from_flash(&backup_gpt, false);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+        return validate_table(&backup_gpt, false);
+    }
+}
+
+psa_status_t gpt_restore(bool is_primary)
+{
+    if (!is_primary && (backup_gpt_lba == 0 || backup_gpt_array_lba == 0)) {
+        ERROR("Backup GPT location unknown!\n");
+        return PSA_ERROR_STORAGE_FAILURE;
+    }
+
+    /* Flush and invalidate the in-memory buffer before attempting to restore a
+     * table. The in-memory header needs to be updated if the flushed LBA was
+     * part of the entry array
+     */
+    psa_status_t ret;
+    if (write_buffered) {
+        ret = flush_lba_buf();
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+        write_buffered = false;
+    }
+    cached_lba = 0;
+
+    if (is_primary) {
+        struct gpt_t backup_gpt;
+        ret = read_table_from_flash(&backup_gpt, false);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+        ret = count_used_partitions(&backup_gpt, &backup_gpt.num_used_partitions);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+        return restore_table(&backup_gpt, false);
+    } else {
+        return restore_table(&primary_gpt, true);
+    }
 }
 
 /* Initialises GPT from first block. */
@@ -1347,6 +1419,118 @@ static inline void swap_headers(const struct gpt_header_t *src, struct gpt_heade
     dst->array_lba = (src->current_lba == PRIMARY_GPT_LBA ?
             backup_gpt_array_lba :
             primary_gpt.header.array_lba);
+}
+
+/* Validates a specific GPT. */
+static psa_status_t validate_table(struct gpt_t *table, bool is_primary)
+{
+    struct gpt_header_t *header = &(table->header);
+
+    /* Check signature */
+    if (strncmp(header->signature, GPT_SIG, GPT_SIG_LEN) != 0) {
+        ERROR("Invalid GPT signature\n");
+        return PSA_ERROR_INVALID_SIGNATURE;
+    }
+
+    /* Check header CRC */
+    uint32_t calc_crc = 0;
+    uint32_t old_crc = header->header_crc;
+    header->header_crc = 0;
+    calc_crc = efi_soft_crc32_update(calc_crc, (uint8_t *)header, GPT_HEADER_SIZE);
+    header->header_crc = old_crc;
+
+    if (old_crc != calc_crc) {
+        ERROR("CRC of header does not match, expected 0x%x got 0x%x\n",
+             old_crc, calc_crc);
+        return PSA_ERROR_INVALID_SIGNATURE;
+    }
+
+    /* Check MyLBA field points to this table */
+    const uint64_t table_lba = (is_primary ? PRIMARY_GPT_LBA : backup_gpt_lba);
+    if (table_lba != header->current_lba) {
+        ERROR("MyLBA not pointing to this GPT, expected 0x%08x%08x, got 0x%08x%08x\n",
+                (uint32_t)(table_lba >> 32),
+                (uint32_t)table_lba,
+                (uint32_t)(header->current_lba >> 32),
+                (uint32_t)(header->current_lba));
+        return PSA_ERROR_INVALID_SIGNATURE;
+    }
+
+    /* Check the CRC of the partition array */
+    calc_crc = 0;
+    for (uint32_t i = 0; i < header->num_partitions; ++i) {
+        uint8_t entry_buf[header->entry_size];
+        memset(entry_buf, 0, header->entry_size);
+        struct gpt_entry_t *entry = (struct gpt_entry_t *)entry_buf;
+
+        psa_status_t ret = read_entry_from_flash(table, i, entry);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+        calc_crc = efi_soft_crc32_update(calc_crc, (uint8_t *)entry, header->entry_size);
+    }
+
+    if (calc_crc != header->array_crc) {
+        ERROR("CRC of partition array does not match, expected 0x%x got 0x%x\n",
+                calc_crc, header->array_crc);
+        return PSA_ERROR_INVALID_SIGNATURE;
+    }
+
+    if (is_primary) {
+        /* Any time the primary table is considered valid, cache the backup
+         * LBA field
+         */
+        backup_gpt_lba = header->backup_lba;
+    } else {
+        /* Any time backup table is considered valid, cache its array LBA
+         * field and crc32
+         */
+        backup_gpt_array_lba = header->array_lba;
+        backup_crc32 = header->header_crc;
+    }
+    return PSA_SUCCESS;
+}
+
+/* Restore a table from another. The second parameter indicates whether the
+ * restoring table is the primary GPT or not
+ */
+static psa_status_t restore_table(struct gpt_t *restore_from, bool is_primary)
+{
+    /* Determine if the restoring GPT is valid */
+    psa_status_t ret = validate_table(restore_from, is_primary);
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+
+    struct gpt_t restore_to;
+    swap_headers(&(restore_from->header), &(restore_to.header));
+
+    /* Copy the partition array as well */
+    ret = move_partition(
+            restore_from->header.array_lba,
+            restore_to.header.array_lba,
+            (restore_from->header.num_partitions +
+             gpt_entry_per_lba_count() - 1) / gpt_entry_per_lba_count());
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+
+    /* Write the header */
+    ret = write_header_to_flash(&restore_to);
+    if (ret != PSA_SUCCESS) {
+        ERROR("Unable to write %s GPT header\n", is_primary ? "backup" : "primary");
+        return ret;
+    }
+
+    /* The primary GPT is cached in memory */
+    if (!is_primary) {
+        memcpy(&(primary_gpt.header), &(restore_to.header), GPT_HEADER_SIZE);
+        primary_gpt.num_used_partitions = restore_from->num_used_partitions;
+    }
+
+    INFO("Successfully restored %s GPT table\n", is_primary ? "backup" : "primary");
+
+    return 0;
 }
 
 /* Converts unicode string to valid ascii */

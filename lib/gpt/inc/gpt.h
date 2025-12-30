@@ -208,6 +208,28 @@ __attribute__((nonnull(1)))
 psa_status_t gpt_entry_remove(const struct efi_guid_t *guid);
 
 /**
+ * \brief Validates the GPT.
+ *
+ * \param[in] is_primary True to validate the primary table, false to validate the backup.
+ *
+ * \retval PSA_SUCCESS GPT is valid.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_INVALID_SIGNATURE GPT is invalid.
+ */
+psa_status_t gpt_validate(bool is_primary);
+
+/**
+ * \brief Restores either the primary or backup GPT from the other copy.
+ *
+ * \param[in] is_primary True to restore the primary table, false to restore the backup.
+ *
+ * \retval PSA_SUCCESS GPT restored.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_INVALID_SIGNATURE Restoring GPT invalid; cannot restore.
+ */
+psa_status_t gpt_restore(bool is_primary);
+
+/**
  * \brief Reads the GPT header from the second block (LBA 1).
  *
  * \param[in] flash_driver Driver used to perform I/O.

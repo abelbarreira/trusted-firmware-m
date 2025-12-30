@@ -369,6 +369,141 @@ void test_gpt_init_should_failWhenFlashDriverNotFullyDefined(void)
     mock_driver.erase = erase_fn;
 }
 
+void test_gpt_validate_should_validateWhenGptGood(void)
+{
+    setup_test_gpt();
+
+    /* Each entry will be read in order to check the partition array CRC */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_validate(true));
+
+    /* Now do the backup */
+    setup_backup_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_validate(false));
+}
+
+void test_gpt_validate_should_failWhenGptSigBad(void)
+{
+    test_header.signature[0] = '\0';
+    setup_test_gpt();
+
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    /* Now do the backup */
+    setup_backup_gpt();
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+}
+
+void test_gpt_validate_should_failWhenHeaderCrcBad(void)
+{
+    test_header.header_crc--;
+    setup_test_gpt();
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    /* Now do the backup */
+    struct gpt_header_t backup_header;
+    MAKE_BACKUP_HEADER(backup_header, test_header);
+    backup_header.header_crc--;
+    register_mocked_read(&backup_header, sizeof(backup_header));
+
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+}
+
+void test_gpt_validate_should_failWhenLbaPointerBad(void)
+{
+    test_header.current_lba = 2;
+    test_header.backup_lba = 3;
+    setup_test_gpt();
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    /* Now set the backup LBA to be something different that what it should be
+     * to force a mismatch
+     */
+    test_header.current_lba = default_header.current_lba;
+    test_header.backup_lba = default_header.backup_lba - 1;
+
+    /* Now do the backup */
+    struct gpt_header_t backup_header;
+    MAKE_BACKUP_HEADER(backup_header, test_header);
+    register_mocked_read(&backup_header, sizeof(backup_header));
+
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+}
+
+void test_gpt_validate_should_failWhenArrayCrcBad(void)
+{
+    test_header.array_crc--;
+    setup_test_gpt();
+
+    /* Each entry will be read in order to check the partition array CRC */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    /* Now do the backup */
+    struct gpt_header_t backup_header;
+    MAKE_BACKUP_HEADER(backup_header, test_header);
+    backup_header.array_crc--;
+    register_mocked_read(&backup_header, sizeof(test_partition_array));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+}
+
+void test_gpt_restore_should_restorePrimaryFromBackup(void)
+{
+    /* Start with a valid GPT */
+    setup_valid_gpt();
+
+    /* The backup table is read and checked for validity, including taking
+     * CRC32 of partition array
+     */
+    setup_backup_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_restore(true));
+}
+
+void test_gpt_restore_should_failToRestoreWhenBackupIsBad(void)
+{
+    /* Start with a valid GPT */
+    setup_valid_gpt();
+
+    /* The backup table is read and checked for validity. Corrupt it in
+     * various ways
+     */
+    struct gpt_header_t backup_header;
+
+    /* Bad signature */
+    MAKE_BACKUP_HEADER(backup_header, test_header);
+    backup_header.signature[0] = '\0';
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_restore(true));
+
+    /* Bad header CRC */
+    MAKE_BACKUP_HEADER(backup_header, test_header);
+    backup_header.header_crc = 0;
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_restore(true));
+
+    /* Bad LBA */
+    test_header.backup_lba = 2;
+    MAKE_BACKUP_HEADER(backup_header, test_header);
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_restore(true));
+    test_header.backup_lba = default_header.backup_lba;
+
+    /* Bad array CRC. Will involve reading array entries */
+    MAKE_BACKUP_HEADER(backup_header, test_header);
+    backup_header.array_crc = 0;
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_restore(true));
+}
+
 void test_gpt_entry_create_should_createNewEntry(void)
 {
     /* Add an entry. It must not overlap with an existing entry and must also
