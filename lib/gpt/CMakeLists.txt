@@ -23,6 +23,7 @@ target_sources(tfm_gpt
 target_include_directories(tfm_gpt
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
+        $<INSTALL_INTERFACE:inc>
 )
 
 target_compile_definitions(tfm_gpt

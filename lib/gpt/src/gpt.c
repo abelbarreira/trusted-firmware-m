@@ -9,11 +9,12 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "psa/error.h"
+#include "psa/crypto.h"
 #include "gpt.h"
 #include "gpt_flash.h"
 #include "tfm_log.h"
 #include "efi_guid_structs.h"
+#include "efi_guid.h"
 #include "efi_soft_crc.h"
 
 /* This needs to be defined by the platform and is used by the GPT library as
@@ -498,6 +499,252 @@ psa_status_t gpt_entry_move(const struct efi_guid_t *guid,
     cached_entry.end = end;
 
     return write_entry(cached_index, &cached_entry, false);
+}
+
+psa_status_t gpt_entry_create(const struct efi_guid_t *type,
+                              const uint64_t           start,
+                              const uint64_t           size,
+                              const uint64_t           attr,
+                              const char               name[GPT_ENTRY_NAME_LENGTH],
+                              struct efi_guid_t       *guid)
+{
+    /* Using inequlity here handles when reading an initial GPT has more than
+     * the maximum defined number of partitions.
+     */
+    if (primary_gpt.num_used_partitions >= plat_max_partitions) {
+        ERROR("Maximum number of partitions reached\n");
+        return PSA_ERROR_INSUFFICIENT_STORAGE;
+    }
+    if (size == 0) {
+        ERROR("Cannot create entry of size 0\n");
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+    if (name[0] == '\0') {
+        ERROR("Cannot create entry with no name\n");
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    uint64_t start_lba = start;
+    psa_status_t ret = PSA_SUCCESS;
+    if (start_lba == 0) {
+        /* Use the lowest free LBA possible. Each partition uses contiguous space,
+         * so if there is a gap between partitions, that will be shown by the end
+         * and start not being contiguous.
+         */
+        uint64_t prev_end = primary_gpt.header.first_lba;
+        for (uint32_t i = 0; i < primary_gpt.header.num_partitions; ++i) {
+            struct gpt_entry_t entry = {0};
+            ret = read_entry_from_flash(&primary_gpt, i, &entry);
+            if (ret != PSA_SUCCESS) {
+                return ret;
+            }
+
+            if (entry.start - 1 > prev_end) {
+                start_lba = prev_end + 1;
+                break;
+            }
+            prev_end = entry.end;
+        }
+
+        if (start_lba != prev_end + 1) {
+            /* No free space */
+            ERROR("No free space on device!\n");
+            return PSA_ERROR_INSUFFICIENT_STORAGE;
+        }
+    }
+
+    /* Must fit on flash */
+    const uint64_t end_lba = start_lba + size - 1;
+    if (start_lba < primary_gpt.header.first_lba ||
+            end_lba < primary_gpt.header.first_lba ||
+            start_lba > primary_gpt.header.last_lba ||
+            end_lba > primary_gpt.header.last_lba)
+    {
+        ERROR("Requested partition would not be on disk\n");
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    /* Do not allow overlapping partitions */
+    struct gpt_entry_t entry;
+    for (uint32_t i = 0; i < primary_gpt.num_used_partitions; ++i) {
+        ret = read_entry_from_flash(&primary_gpt, i, &entry);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+
+        if ((start_lba >= entry.start && start_lba <= entry.end) ||
+                (end_lba >= entry.start && end_lba <= entry.end) ||
+                (start_lba <= entry.start && end_lba >= entry.end))
+        {
+            return PSA_ERROR_INVALID_ARGUMENT;
+        }
+    }
+
+    /* Generate the new random GUID */
+    if (efi_guid_generate_random(guid) != PSA_SUCCESS) {
+        ERROR("Unable to generate GUID\n");
+        return PSA_ERROR_STORAGE_FAILURE;
+    }
+
+    /* Set new entry's metadata */
+    struct gpt_entry_t new_entry = {0};
+    new_entry.start = start_lba;
+    new_entry.end = end_lba;
+    new_entry.attr = attr;
+    memcpy(new_entry.name, name, GPT_ENTRY_NAME_LENGTH);
+    new_entry.partition_type = *type;
+    new_entry.unique_guid = *guid;
+
+    /* Write the new entry. Skip header update as it is explicitely called
+     * below with new number of partitions
+     */
+    ret = write_entry(primary_gpt.num_used_partitions++, &new_entry, true);
+    if (ret != PSA_SUCCESS) {
+        --primary_gpt.num_used_partitions;
+        return ret;
+    }
+
+    /* Flush the buffered LBA if not done so. This will cause the header to be
+     * updated
+     */
+    if (write_buffered) {
+        /* flush_lba_buf will update the header */
+        ret = flush_lba_buf();
+    } else {
+        ret = update_header(primary_gpt.num_used_partitions);
+    }
+
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+
+    return PSA_SUCCESS;
+}
+
+psa_status_t gpt_entry_remove(const struct efi_guid_t *guid)
+{
+    struct gpt_entry_t cached_entry;
+    uint32_t cached_index;
+    psa_status_t ret = find_gpt_entry(
+            &primary_gpt,
+            gpt_entry_cmp_guid,
+            guid,
+            0,
+            &cached_entry,
+            &cached_index);
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+
+    /* Shuffle the remainder of the array up. This will overwrite the
+     * most previous entry.
+     *
+     * The first LBA to potentially modify is in memory. It doesn't need
+     * to be modified if the last entry in the array was moved or if it is
+     * the only LBA used by the partition array
+     */
+    if (cached_index != primary_gpt.num_used_partitions - 1 ||
+            cached_index < gpt_entry_per_lba_count())
+    {
+        /* Shuffle up the remainder of the LBA. If it was the last entry
+         * in the LBA, there is nothing to do.
+         */
+        const uint32_t lba_index = cached_index % gpt_entry_per_lba_count();
+        if (lba_index + 1 != gpt_entry_per_lba_count()) {
+            memmove(
+                    lba_buf + lba_index * primary_gpt.header.entry_size,
+                    lba_buf + (lba_index + 1) * primary_gpt.header.entry_size,
+                    (gpt_entry_per_lba_count() - lba_index - 1) * primary_gpt.header.entry_size);
+        }
+
+        /* If this is not the last LBA, then read the next LBA into memory and
+         * place it's first element in the final slot of the currently modified
+         * LBA. Repeat this for each LBA read.
+         *
+         * Use a second buffer to read each consecutive LBA and copy that to
+         * the global LBA buffer to then write afterwards.
+         */
+        const uint64_t array_end_lba = partition_array_last_lba(&primary_gpt);
+        for (uint64_t i = partition_entry_lba(&primary_gpt, cached_index) + 1;
+                i <= array_end_lba;
+                ++i)
+        {
+            uint8_t array_buf[TFM_GPT_BLOCK_SIZE] = {0};
+            int read_ret = plat_flash_driver->read(i, array_buf);
+            if (read_ret != TFM_GPT_BLOCK_SIZE) {
+                ERROR("Unable to read LBA 0x%08x%08x\n",
+                        (uint32_t)(i >> 32), (uint32_t)i);
+                return PSA_ERROR_STORAGE_FAILURE;
+            }
+
+            memcpy(
+                    lba_buf + primary_gpt.header.entry_size * (gpt_entry_per_lba_count() - 1),
+                    array_buf,
+                    GPT_ENTRY_SIZE);
+
+            /* Write to backup first, then primary partition array */
+            if (backup_gpt_array_lba != 0) {
+                ret = write_to_flash(backup_gpt_array_lba + i - 1 - PRIMARY_GPT_ARRAY_LBA);
+                if (ret != PSA_SUCCESS) {
+                    return ret;
+                }
+            }
+            ret = write_to_flash(i - 1);
+            if (ret != PSA_SUCCESS) {
+                return ret;
+            }
+
+            memmove(
+                    array_buf,
+                    array_buf + primary_gpt.header.entry_size,
+                    sizeof(array_buf) - primary_gpt.header.entry_size);
+            memcpy(lba_buf, array_buf, TFM_GPT_BLOCK_SIZE);
+        }
+
+        /* What was the final LBA is now cached and may be empty or partially-filled */
+        cached_lba = array_end_lba;
+        write_buffered = false;
+        uint32_t entries_in_last_lba = (--primary_gpt.num_used_partitions) % gpt_entry_per_lba_count();
+        if (entries_in_last_lba == 0) {
+            /* There's nothing left in this LBA, so zero it all and write it out.
+             * There is also no need to do an erase just to zero afterwards.
+             */
+            memset(lba_buf, 0, TFM_GPT_BLOCK_SIZE);
+            if (backup_gpt_array_lba != 0) {
+                int write_ret = plat_flash_driver->write(
+                        backup_gpt_array_lba + array_end_lba - PRIMARY_GPT_ARRAY_LBA,
+                        lba_buf);
+                if (write_ret != TFM_GPT_BLOCK_SIZE) {
+                    return PSA_ERROR_STORAGE_FAILURE;
+                }
+            }
+            int write_ret = plat_flash_driver->write(array_end_lba, lba_buf);
+            if (write_ret != TFM_GPT_BLOCK_SIZE) {
+                return PSA_ERROR_STORAGE_FAILURE;
+            }
+        } else {
+            /* Zero what is not needed anymore */
+            memset(
+                    lba_buf + primary_gpt.header.entry_size * entries_in_last_lba,
+                    0,
+                    (gpt_entry_per_lba_count() - entries_in_last_lba) * primary_gpt.header.entry_size);
+            if (backup_gpt_array_lba != 0) {
+                ret = write_to_flash(backup_gpt_array_lba + array_end_lba - PRIMARY_GPT_ARRAY_LBA);
+                if (ret != PSA_SUCCESS) {
+                    return ret;
+                }
+            }
+            ret = write_to_flash(array_end_lba);
+            if (ret != PSA_SUCCESS) {
+                return ret;
+            }
+        }
+    }
+
+    /* Update the header after flash changes */
+    ret = update_header(primary_gpt.num_used_partitions);
+
+    return ret;
 }
 
 /* Initialises GPT from first block. */

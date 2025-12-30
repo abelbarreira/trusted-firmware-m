@@ -10,6 +10,7 @@
 
 #include "unity.h"
 
+#include "mock_efi_guid.h"
 #include "mock_efi_soft_crc.h"
 #include "mock_tfm_log.h"
 #include "mock_tfm_vprintf.h"
@@ -368,6 +369,260 @@ void test_gpt_init_should_failWhenFlashDriverNotFullyDefined(void)
     mock_driver.erase = erase_fn;
 }
 
+void test_gpt_entry_create_should_createNewEntry(void)
+{
+    /* Add an entry. It must not overlap with an existing entry and must also
+     * fit on the storage device. The GUID should be populated with something.
+     */
+    setup_valid_gpt();
+
+    /* Each entry will be read in order to check that it doesn't overlap with
+     * any of them
+     */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    /* Update header. Read each entry for CRC calculation. */
+    struct gpt_entry_t new_entry = {
+        .type = NULL_GUID,
+        .start = TEST_GPT_THIRD_PARTITION_END + 1,
+        .end = TEST_GPT_THIRD_PARTITION_END + 1,
+        .attr = 0,
+        .name = "Fourth partition"
+    };
+
+    /* Mock out the call to create a new GUID */
+    struct efi_guid_t expected_guid = MAKE_EFI_GUID(5, 5, 5, 5, 5, 6, 7, 8, 9, 10, 11);
+    efi_guid_generate_random_ExpectAnyArgsAndReturn(PSA_SUCCESS);
+    efi_guid_generate_random_ReturnThruPtr_guid(&expected_guid);
+
+    /* Ensure also the that a new GUID is assigned */
+    struct efi_guid_t new_guid = MAKE_EFI_GUID(4, 4, 4, 4, 5, 6, 7, 8, 9, 10, 11);
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_entry_create(
+                &expected_guid,
+                new_entry.start,
+                new_entry.end - new_entry.start + 1,
+                new_entry.attr,
+                new_entry.name,
+                &new_guid));
+    TEST_ASSERT_EQUAL_MEMORY(&expected_guid, &new_guid, sizeof(new_guid));
+}
+
+void test_gpt_entry_create_should_createNewEntryNextToLastEntry(void)
+{
+    /* Add an entry, allowing the library to choose the start LBA.
+     * The GUID should be populated with something.
+     */
+    setup_valid_gpt();
+
+    /* Each entry will be read in order to check that it doesn't overlap with
+     * any of them
+     */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    /* Update header. Read each entry for CRC calculation. */
+    struct gpt_entry_t new_entry = {
+        .type = NULL_GUID,
+        .start = TEST_GPT_THIRD_PARTITION_END + 1,
+        .end = TEST_GPT_THIRD_PARTITION_END + 1,
+        .attr = 0,
+        .name = "Fourth partition"
+    };
+
+    /* Mock out the call to create a new GUID */
+    struct efi_guid_t expected_guid = MAKE_EFI_GUID(5, 5, 5, 5, 5, 6, 7, 8, 9, 10, 11);
+    efi_guid_generate_random_ExpectAnyArgsAndReturn(PSA_SUCCESS);
+    efi_guid_generate_random_ReturnThruPtr_guid(&expected_guid);
+
+    /* Ensure also the that a new GUID is assigned */
+    struct efi_guid_t new_guid = MAKE_EFI_GUID(4, 4, 4, 4, 5, 6, 7, 8, 9, 10, 11);
+    char name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    name[0] = 'a';
+
+    /* Ensure also the that a new GUID is assigned */
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_entry_create(
+                &expected_guid,
+                0,
+                1,
+                new_entry.attr,
+                name,
+                &new_guid));
+    TEST_ASSERT_EQUAL_MEMORY(&expected_guid, &new_guid, sizeof(new_guid));
+}
+
+void test_gpt_entry_create_should_failToCreateEntryWhenLowestFreeLbaDoesNotHaveSpace(void)
+{
+    /* Add an entry, allowing the library to choose the start LBA.
+     * The GUID should be populated with something.
+     */
+    setup_valid_gpt();
+
+    /* Each entry will be read in order to check that it doesn't overlap with
+     * any of them
+     */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    /* Ensure also the that a new GUID is assigned */
+    struct efi_guid_t existing_guid = MAKE_EFI_GUID(4, 4, 4, 4, 5, 6, 7, 8, 9, 10, 11);
+    struct efi_guid_t new_guid;
+    char name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    name[0] = 'a';
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_create(
+                &(existing_guid),
+                0,
+                TEST_DISK_NUM_BLOCKS,
+                0,
+                name,
+                &(new_guid)));
+}
+
+void test_gpt_entry_create_should_failWhenTableFull(void)
+{
+    /* Start with a full array of entries */
+    struct gpt_entry_t new_entry = {
+        .type = MAKE_EFI_GUID(4, 4, 4, 4, 5, 6, 7, 8, 9, 10, 11),
+        .start = TEST_GPT_THIRD_PARTITION_END + 1,
+        .end = TEST_GPT_THIRD_PARTITION_END + 1,
+        .attr = 0,
+        .guid = MAKE_EFI_GUID(4, 4, 4, 4, 5, 6, 7, 8, 9, 10, 11),
+        .name = "Fourth partition"
+    };
+    test_partition_array[TEST_MAX_PARTITIONS - 1] = new_entry;
+    setup_valid_gpt();
+
+    struct efi_guid_t type = MAKE_EFI_GUID(5, 5, 5, 5, 5, 6, 7, 8, 9, 10, 11);
+    struct efi_guid_t guid;
+    char name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    name[0] = 'a';
+    TEST_ASSERT_EQUAL(PSA_ERROR_INSUFFICIENT_STORAGE, gpt_entry_create(
+                &type,
+                TEST_GPT_THIRD_PARTITION_END + 4,
+                1,
+                0,
+                name,
+                &guid));
+}
+
+void test_gpt_entry_create_should_failWhenLbaOffDisk(void)
+{
+    setup_valid_gpt();
+
+    /* First start on disk, then go off the disk */
+    struct efi_guid_t type = NULL_GUID;
+    struct efi_guid_t guid;
+    char name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    name[0] = 'a';
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_create(
+                &type,
+                TEST_GPT_THIRD_PARTITION_END + 1,
+                1000,
+                0,
+                name,
+                &guid));
+
+    /* Second, start off the disk entirely */
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_create(
+                &type,
+                TEST_DISK_NUM_BLOCKS + 100,
+                1,
+                0,
+                name,
+                &guid));
+
+    /* Third, do the same but in the header area */
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_create(
+                &type,
+                TEST_GPT_PRIMARY_LBA,
+                1,
+                0,
+                name,
+                &guid));
+
+    /* Fourth, start in the backup header area */
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_create(
+                &type,
+                TEST_GPT_BACKUP_LBA,
+                1,
+                0,
+                name,
+                &guid));
+}
+
+void test_gpt_entry_create_should_failWhenOverlapping(void)
+{
+    setup_valid_gpt();
+
+    /* Since the disk is not fragmented by default, there are two test cases:
+     *   1. start in the middle of a partition and end in the middle of a partition
+     *   2. start in the middle of a partition and end in free space
+     */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    struct efi_guid_t type = NULL_GUID;
+    struct efi_guid_t guid;
+    char name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    name[0] = 'a';
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_create(
+                &type,
+                TEST_GPT_FIRST_PARTITION_START,
+                TEST_GPT_FIRST_PARTITION_END - TEST_GPT_FIRST_PARTITION_START + 1,
+                0,
+                name,
+                &guid));
+
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_create(
+                &type,
+                TEST_GPT_FIRST_PARTITION_START,
+                TEST_GPT_LAST_USABLE_LBA - TEST_GPT_FIRST_PARTITION_START,
+                0,
+                name,
+                &guid));
+}
+
+void test_gpt_entry_create_should_failWhenNameIsEmpty(void)
+{
+    /* Start with a populated GPT */
+    setup_valid_gpt();
+
+    struct efi_guid_t type = NULL_GUID;
+    struct gpt_entry_t new_entry = {
+        .type = type,
+        .start = TEST_GPT_THIRD_PARTITION_END + 1,
+        .end = TEST_GPT_THIRD_PARTITION_END + 1,
+        .attr = 0,
+    };
+
+    /* Make an entry with an empty name */
+    char name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    struct efi_guid_t new_guid;
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_create(
+                &type,
+                new_entry.start,
+                1,
+                0,
+                name,
+                &new_guid));
+}
+
+void test_gpt_entry_create_should_failWhenSizeIsZero(void)
+{
+    /* Start with a populated GPT */
+    setup_valid_gpt();
+
+    struct efi_guid_t type = NULL_GUID;
+
+    /* Make the size zero */
+    struct efi_guid_t new_guid;
+    char name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    name[0] = 'a';
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_create(
+                &type,
+                TEST_GPT_THIRD_PARTITION_END + 1,
+                0,
+                0,
+                name,
+                &new_guid));
+}
+
 void test_gpt_entry_move_should_moveEntry(void)
 {
     /* Start with a populated GPT */
@@ -652,6 +907,35 @@ void test_gpt_entry_rename_should_failWhenEntryNotExisting(void)
     char new_name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
     new_name[0] = 'a';
     TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_rename(&non_existing, new_name));
+}
+
+void test_gpt_entry_remove_should_removeEntry(void)
+{
+    /* Start with a populated GPT */
+    setup_valid_gpt();
+
+    /* Each entry is read */
+    struct gpt_entry_t *test_entry = &(default_partition_array[TEST_DEFAULT_NUM_PARTITIONS - 1]);
+    struct efi_guid_t test_guid = test_entry->guid;
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_entry_remove(&test_guid));
+}
+
+void test_gpt_entry_remove_should_failWhenEntryNotExisting(void)
+{
+    /* Start by trying to remove from an empty table */
+    setup_empty_gpt();
+
+    struct efi_guid_t non_existing = NULL_GUID;
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_remove(&non_existing));
+
+    /* Now, have a non-empty GPT but search for a non-existing GUID */
+    setup_valid_gpt();
+
+    /* Each entry should be read. */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_remove(&non_existing));
 }
 
 void test_gpt_entry_read_should_populateEntry(void)

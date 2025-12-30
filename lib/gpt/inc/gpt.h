@@ -171,6 +171,43 @@ psa_status_t gpt_entry_move(const struct efi_guid_t *guid,
                             const uint64_t           end);
 
 /**
+ * \brief Creates a partition entry in the table.
+ *
+ * \param[in]  type Partition type.
+ * \param[in]  start Starting LBA (0 uses the lowest free LBA possible).
+ * \param[in]  size Size of the partition in LBAs.
+ * \param[in]  attr Attributes for the partition.
+ * \param[in]  name Partition name in unicode.
+ * \param[out] guid GUID populated on success for subsequent API calls.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_INSUFFICIENT_STORAGE Maximum number of partitions reached.
+ * \retval PSA_ERROR_INVALID_ARGUMENT Partition would extend beyond the flash.
+ * \retval PSA_ERROR_INVALID_ARGUMENT New entry would overlap an existing partition, the name is empty,
+ *                                    or \p size is zero.
+ */
+__attribute__((nonnull(1,5,6)))
+psa_status_t gpt_entry_create(const struct efi_guid_t *type,
+                              const uint64_t           start,
+                              const uint64_t           size,
+                              const uint64_t           attr,
+                              const char               name[GPT_ENTRY_NAME_LENGTH],
+                              struct efi_guid_t       *guid);
+
+/**
+ * \brief Removes a partition entry from the table.
+ *
+ * \param[in] guid Entry to remove.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_DOES_NOT_EXIST No entry found with the provided GUID.
+ */
+__attribute__((nonnull(1)))
+psa_status_t gpt_entry_remove(const struct efi_guid_t *guid);
+
+/**
  * \brief Reads the GPT header from the second block (LBA 1).
  *
  * \param[in] flash_driver Driver used to perform I/O.
