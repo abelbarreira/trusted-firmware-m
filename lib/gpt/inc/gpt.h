@@ -152,6 +152,25 @@ __attribute__((nonnull(1)))
 psa_status_t gpt_attr_set(const struct efi_guid_t *guid, const uint64_t attr);
 
 /**
+ * \brief Moves (or resizes) a partition entry.
+ *
+ * \param[in] guid Entry to move.
+ * \param[in] start New start LBA.
+ * \param[in] end New end LBA.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_DOES_NOT_EXIST No entry found with the provided GUID.
+ * \retval PSA_ERROR_INVALID_ARGUMENT Move would overlap with an existing partition.
+ * \retval PSA_ERROR_INVALID_ARGUMENT \p end is less than \p start.
+ * \retval PSA_ERROR_INVALID_ARGUMENT Part of the partition would move off flash.
+ */
+__attribute__((nonnull(1)))
+psa_status_t gpt_entry_move(const struct efi_guid_t *guid,
+                            const uint64_t           start,
+                            const uint64_t           end);
+
+/**
  * \brief Reads the GPT header from the second block (LBA 1).
  *
  * \param[in] flash_driver Driver used to perform I/O.

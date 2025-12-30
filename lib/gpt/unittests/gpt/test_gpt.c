@@ -368,6 +368,134 @@ void test_gpt_init_should_failWhenFlashDriverNotFullyDefined(void)
     mock_driver.erase = erase_fn;
 }
 
+void test_gpt_entry_move_should_moveEntry(void)
+{
+    /* Start with a populated GPT */
+    setup_valid_gpt();
+    struct gpt_entry_t *test_entry = &(test_partition_array[TEST_DEFAULT_NUM_PARTITIONS - 1]);
+    struct efi_guid_t test_guid = test_entry->guid;
+
+    /* First all entries are read to determine for overlap */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    /* Move the partition. Read each block to then write. It doesn't matter what
+     * the data is
+     */
+    char unused_read_data = 'X';
+    register_mocked_read(&unused_read_data, sizeof(unused_read_data));
+
+    /* Header update - reads partition array to calculate crc32 and also then
+     * reads the header to modify and write back
+     */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    register_mocked_read(&test_header, sizeof(test_header));
+
+    /* Do a valid move and resize in one */
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_entry_move(
+                &test_guid,
+                TEST_GPT_THIRD_PARTITION_END + 1,
+                TEST_GPT_THIRD_PARTITION_END + 1));
+}
+
+void test_gpt_entry_move_should_failWhenEntryNotExisting(void)
+{
+    setup_valid_gpt();
+
+    /* Read every entry */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t non_existing = NULL_GUID;
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_move(
+                &non_existing,
+                TEST_GPT_THIRD_PARTITION_END + 1,
+                TEST_GPT_THIRD_PARTITION_END + 1));
+}
+
+void test_gpt_entry_move_should_failWhenEndLessThanStart(void)
+{
+    setup_valid_gpt();
+
+    struct efi_guid_t test_guid = test_partition_array[0].guid;
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_move(
+                &test_guid,
+                TEST_GPT_THIRD_PARTITION_END + 2,
+                TEST_GPT_THIRD_PARTITION_END + 1));
+}
+
+void test_gpt_entry_move_should_failWhenLbaOverlapping(void)
+{
+    setup_valid_gpt();
+
+    /* Try to move an entry. Each entry is read to determine for overlap */
+    size_t test_index = 1;
+    struct gpt_entry_t *test_entry = &(test_partition_array[test_index]);
+    struct efi_guid_t test_guid = test_entry->guid;
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    /* Try to move the test entry into the middle of the entry just read.
+     * Starting at the same LBA
+     */
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_move(
+                &test_guid,
+                TEST_GPT_FIRST_PARTITION_START,
+                TEST_GPT_SECOND_PARTITION_END));
+
+    /* Try to move the test entry into the middle of the entry just read.
+     * Starting in the middle
+     */
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_move(
+                &test_guid,
+                TEST_GPT_FIRST_PARTITION_START + 1,
+                TEST_GPT_SECOND_PARTITION_END));
+
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_move(
+                &test_guid,
+                TEST_GPT_SECOND_PARTITION_START,
+                TEST_GPT_THIRD_PARTITION_START));
+
+    /* Try to move the test entry into the middle of the entry just read.
+     * Starting and ending in the middle.
+     */
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_move(
+                &test_guid,
+                TEST_GPT_FIRST_PARTITION_START + 1,
+                TEST_GPT_FIRST_PARTITION_START + 1));
+}
+
+void test_gpt_entry_move_should_failWhenLbaOffDisk(void)
+{
+    setup_valid_gpt();
+
+    /* Try to move an entry. */
+    size_t test_index = 1;
+    struct gpt_entry_t *test_entry = &(test_partition_array[test_index]);
+    struct efi_guid_t test_guid = test_entry->guid;
+
+    /* First start on disk, then go off the disk */
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_move(
+                &test_guid,
+                TEST_GPT_THIRD_PARTITION_END + 1,
+                TEST_DISK_NUM_BLOCKS + 1));
+
+    /* Second, start off the disk entirely */
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_move(
+                &test_guid,
+                TEST_DISK_NUM_BLOCKS + 1,
+                TEST_DISK_NUM_BLOCKS + 2));
+
+    /* Third, do the same but in the header area */
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_move(
+                &test_guid,
+                TEST_GPT_PRIMARY_LBA,
+                TEST_GPT_THIRD_PARTITION_END + 2));
+
+    /* Fourth, start in the backup header area */
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_move(
+                &test_guid,
+                TEST_GPT_BACKUP_LBA,
+                TEST_GPT_BACKUP_LBA + 1));
+}
+
 void test_gpt_attr_set_should_setAttributes(void)
 {
     /* Start with a populated GPT */

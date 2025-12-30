@@ -214,6 +214,10 @@ static psa_status_t find_gpt_entry(const struct gpt_t      *table,
                                    const uint32_t           repeat_index,
                                    struct gpt_entry_t      *entry,
                                    uint32_t                *array_index);
+static psa_status_t move_lba(const uint64_t old_lba, const uint64_t new_lba);
+static psa_status_t move_partition(const uint64_t old_lba,
+                                   const uint64_t new_lba,
+                                   const uint64_t num_blocks);
 static psa_status_t mbr_load(struct mbr_t *mbr);
 static bool gpt_entry_cmp_guid(const struct gpt_entry_t *entry, const void *guid);
 static bool gpt_entry_cmp_name(const struct gpt_entry_t *entry, const void *name);
@@ -387,6 +391,111 @@ psa_status_t gpt_attr_set(const struct efi_guid_t *guid, const uint64_t attr)
     }
 
     cached_entry.attr = attr;
+
+    return write_entry(cached_index, &cached_entry, false);
+}
+
+psa_status_t gpt_entry_move(const struct efi_guid_t *guid,
+                            const uint64_t           start,
+                            const uint64_t           end)
+{
+    if (end < start) {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    /* Must fit on flash */
+    if (start < primary_gpt.header.first_lba ||
+            end < primary_gpt.header.first_lba ||
+            start > primary_gpt.header.last_lba ||
+            end > primary_gpt.header.last_lba)
+    {
+        ERROR("Requested move would not be on disk\n");
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    struct gpt_entry_t cached_entry;
+    uint32_t cached_index;
+    psa_status_t ret = find_gpt_entry(
+            &primary_gpt,
+            gpt_entry_cmp_guid,
+            guid,
+            0,
+            &cached_entry,
+            &cached_index);
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+
+     /* Prevent unecessary I/O */
+    if (start == cached_entry.start && end == cached_entry.end) {
+        return PSA_SUCCESS;
+    }
+
+    /* It is not possible to move a partition such that it overlaps with an
+     * existing partition (other than itself). Check the currently cached LBA
+     * first, then the others to avoid reading this LBA twice
+     */
+    struct gpt_entry_t entry;
+    const uint64_t checked_lba = cached_lba;
+    const uint64_t array_end_lba = partition_array_last_lba(&primary_gpt);
+    uint32_t num_entries_in_cached_lba;
+    if (cached_lba == array_end_lba) {
+        /* If this is 0, then the last LBA is full */
+        uint32_t num_entries_in_last_lba = primary_gpt.num_used_partitions % gpt_entry_per_lba_count();
+        if (num_entries_in_last_lba == 0) {
+            num_entries_in_cached_lba = gpt_entry_per_lba_count();
+        } else {
+            num_entries_in_cached_lba = num_entries_in_last_lba;
+        }
+    } else {
+        num_entries_in_cached_lba = gpt_entry_per_lba_count();
+    }
+
+    /* Cached LBA */
+    for (uint32_t i = 0; i < num_entries_in_cached_lba; ++i) {
+        memcpy(&entry, lba_buf + (i * primary_gpt.header.entry_size), GPT_ENTRY_SIZE);
+
+        const struct efi_guid_t ent_guid = entry.unique_guid;
+        if (efi_guid_cmp(&ent_guid, guid) == 0) {
+            continue;
+        }
+
+        if ((start >= entry.start && start <= entry.end) ||
+                (end >= entry.start && end <= entry.end) ||
+                (start <= entry.start && end >= entry.end))
+        {
+            return PSA_ERROR_INVALID_ARGUMENT;
+        }
+    }
+
+    /* All the rest */
+    for (uint32_t i = 0; i < primary_gpt.num_used_partitions; ++i) {
+        if (partition_entry_lba(&primary_gpt, i) == checked_lba) {
+            continue;
+        }
+
+        ret = read_entry_from_flash(&primary_gpt, i, &entry);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+
+        if ((start >= entry.start && start <= entry.end) ||
+                (end >= entry.start && end <= entry.end) ||
+                (start <= entry.start && end >= entry.end))
+        {
+            return PSA_ERROR_INVALID_ARGUMENT;
+        }
+    }
+
+    ret = move_partition(
+            cached_entry.start,
+            start,
+            end - start + 1);
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+    cached_entry.start = start;
+    cached_entry.end = end;
 
     return write_entry(cached_index, &cached_entry, false);
 }
@@ -584,6 +693,49 @@ static psa_status_t find_gpt_entry(const struct gpt_t        *table,
     }
 
     return io_failure ? PSA_ERROR_STORAGE_FAILURE : PSA_ERROR_DOES_NOT_EXIST;
+}
+
+/* Move a single LBAs data to somewhere else */
+static psa_status_t move_lba(const uint64_t old_lba, const uint64_t new_lba)
+{
+    const psa_status_t ret = read_from_flash(old_lba);
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+
+    return write_to_flash(new_lba);
+}
+
+/* Moves a partition's data to start from one logical block to another */
+static psa_status_t move_partition(const uint64_t old_lba,
+                                   const uint64_t new_lba,
+                                   const uint64_t num_blocks)
+{
+    if (old_lba == new_lba) {
+        return PSA_SUCCESS;
+    }
+
+    if (old_lba < new_lba) {
+        /* Move block by block backwards */
+        for (uint64_t block = num_blocks; block > 0; --block) {
+            const psa_status_t ret = move_lba(old_lba + block - 1, new_lba + block - 1);
+            if (ret != PSA_SUCCESS) {
+                return ret;
+            }
+        }
+    } else {
+        /* Move block by block forwards */
+        for (uint64_t block = 0; block < num_blocks; ++block) {
+            const psa_status_t ret = move_lba(old_lba + block, new_lba + block);
+            if (ret != PSA_SUCCESS) {
+                return ret;
+            }
+        }
+    }
+
+    write_buffered = false;
+
+    return PSA_SUCCESS;
 }
 
 /* Updates the header of the GPT based on new number of partitions */
@@ -794,8 +946,8 @@ static psa_status_t flush_lba_buf(void)
         /* Backup array entry. Write to backup and primary array */
         ret = write_entries_to_flash(cached_lba - backup_gpt_array_lba, false);
     } else {
-        /* Shouldn't be possible */
-        ERROR("Unknown data in LBA cache, discarding\n");
+        /* Some other LBA is cached, possibly data. Write it anyway */
+        ret = write_to_flash(cached_lba);
     }
 
     in_flush = false;
