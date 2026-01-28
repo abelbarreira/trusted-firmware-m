@@ -8,6 +8,8 @@
  *
  */
 
+#include <stdbool.h>
+
 #include "interrupt.h"
 
 #include "bitops.h"
@@ -23,6 +25,10 @@
 #include "load/spm_load_api.h"
 #include "ffm/backend.h"
 #include "internal_status_code.h"
+
+#if (CONFIG_TFM_SPM_BACKEND_IPC == 1) && (CONFIG_TFM_SCHEDULE_WHEN_NS_INTERRUPTED == 0)
+static bool isr_sched_hint_cookie;
+#endif
 
 #if TFM_ISOLATION_LEVEL != 1
 extern void tfm_flih_func_return(psa_flih_result_t result);
@@ -169,6 +175,23 @@ const struct irq_load_info_t *get_irq_info_for_signal(
     return NULL;
 }
 
+#if (CONFIG_TFM_SPM_BACKEND_IPC == 1) && (CONFIG_TFM_SCHEDULE_WHEN_NS_INTERRUPTED == 0)
+static inline void tfm_set_isr_cookie(void)
+{
+    isr_sched_hint_cookie = true;
+}
+
+bool tfm_get_isr_cookie(void)
+{
+    if (isr_sched_hint_cookie) {
+        isr_sched_hint_cookie = false;
+        return true;
+    }
+
+    return false;
+}
+#endif
+
 void spm_handle_interrupt(struct partition_t *p_pt,
                           const struct irq_load_info_t *p_ildi)
 {
@@ -209,6 +232,17 @@ void spm_handle_interrupt(struct partition_t *p_pt,
 
     if (flih_result == PSA_FLIH_SIGNAL) {
         ret = backend_assert_signal(p_pt, p_ildi->signal);
+
+#if CONFIG_TFM_SPM_BACKEND_IPC == 1 && (CONFIG_TFM_SCHEDULE_WHEN_NS_INTERRUPTED == 0)
+        if (ret == STATUS_NEED_SCHEDULE) {
+            /*
+             * Save an isr scheduling hint in the cookie for possible later
+             * processing.
+             */
+            tfm_set_isr_cookie();
+        }
+#endif
+
         /* In SFN backend, there is only one thread, no thread switch. */
 #if CONFIG_TFM_SPM_BACKEND_SFN != 1
         if (ret == STATUS_NEED_SCHEDULE) {
