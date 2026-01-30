@@ -1,7 +1,5 @@
 /*
  * SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
- * Copyright (c) 2021-2024 Cypress Semiconductor Corporation (an Infineon company)
- * or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -48,7 +46,6 @@ static struct secure_mailbox_queue_t spe_mailbox_queue;
 struct vectors {
     psa_invec in_vec[PSA_MAX_IOVEC];
     psa_outvec out_vec[PSA_MAX_IOVEC];
-    psa_outvec *original_out_vec;
     size_t out_len;
     bool in_use;
 };
@@ -158,21 +155,20 @@ __STATIC_INLINE struct mailbox_reply_t *get_nspe_reply_addr(uint8_t idx)
 static void mailbox_direct_reply(uint8_t idx, uint32_t result)
 {
     struct mailbox_reply_t *reply_ptr;
-    uint32_t ret_result = result;
+
+    /* Get reply address */
+    reply_ptr = get_nspe_reply_addr(idx);
+    reply_ptr->return_val = result;
 
     /* Copy outvec lengths back if necessary */
-    if ((vectors[idx].in_use) && (result == PSA_SUCCESS)) {
-        for (int i = 0; i < vectors[idx].out_len; i++) {
-            vectors[idx].original_out_vec[i].len = vectors[idx].out_vec[i].len;
+    if (vectors[idx].in_use && (result == PSA_SUCCESS)) {
+        for (int i = 0; i < PSA_MAX_IOVEC; i++) {
+            reply_ptr->out_vec_len[i] = vectors[idx].out_vec[i].len;
         }
     }
 
     vectors[idx].in_use = false;
 
-    /* Get reply address */
-    reply_ptr = get_nspe_reply_addr(idx);
-    spm_memcpy(&reply_ptr->return_val, &ret_result,
-               sizeof(reply_ptr->return_val));
     MAILBOX_CLEAN_CACHE(reply_ptr, sizeof(*reply_ptr));
 
     mailbox_clean_queue_slot(idx);
@@ -195,11 +191,6 @@ static int local_copy_vects(const struct psa_client_params_t *params,
 
     in_len = params->psa_call_params.in_len;
     out_len = params->psa_call_params.out_len;
-
-    if (((params->psa_call_params.out_vec == NULL) && (out_len != 0)) ||
-        ((params->psa_call_params.in_vec == NULL) && (in_len != 0))) {
-        return MAILBOX_INVAL_PARAMS;
-    }
 
     if ((in_len > PSA_MAX_IOVEC) ||
         (out_len > PSA_MAX_IOVEC) ||
@@ -229,7 +220,6 @@ static int local_copy_vects(const struct psa_client_params_t *params,
     *control = PARAM_SET_NS_OUTVEC(*control);
 
     vectors[idx].out_len = out_len;
-    vectors[idx].original_out_vec = params->psa_call_params.out_vec;
 
     vectors[idx].in_use = true;
     return MAILBOX_SUCCESS;

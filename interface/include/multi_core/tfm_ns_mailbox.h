@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2019-2023, Arm Limited. All rights reserved.
- * Copyright (c) 2024 Cypress Semiconductor Corporation (an Infineon company)
- * or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -42,7 +40,7 @@ extern "C" {
  */
 struct ns_mailbox_slot_t {
     const void *owner;                      /* Handle of owner task. */
-    int32_t    *reply;                      /* Address of reply value belonging
+    struct mailbox_reply_t *reply;          /* Address of reply value belonging
                                              * to owner task.
                                              */
 #ifdef TFM_MULTI_CORE_NS_OS_MAILBOX_THREAD
@@ -112,7 +110,7 @@ int32_t tfm_ns_mailbox_init(struct ns_mailbox_queue_t *queue);
 int32_t tfm_ns_mailbox_client_call(uint32_t call_type,
                                    const struct psa_client_params_t *params,
                                    int32_t client_id,
-                                   int32_t *reply);
+                                   struct mailbox_reply_t *reply);
 
 #ifdef TFM_MULTI_CORE_NS_OS_MAILBOX_THREAD
 /**

@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2019-2021, Arm Limited. All rights reserved.
- * Copyright (c) 2024 Cypress Semiconductor Corporation (an Infineon company)
- * or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -153,12 +151,12 @@ static int32_t mailbox_tx_client_req(uint32_t call_type,
     return MAILBOX_SUCCESS;
 }
 
-static int32_t mailbox_rx_client_reply(uint8_t idx, int32_t *reply)
+static int32_t mailbox_rx_client_reply(uint8_t idx, struct mailbox_reply_t *reply)
 {
     struct mailbox_slot_t *slot = &mailbox_queue_ptr->slots[idx];
 
     MAILBOX_INVALIDATE_CACHE(&slot->reply, sizeof(slot->reply));
-    *reply = slot->reply.return_val;
+    *reply = slot->reply;
 
     /* Clear up the owner field */
     set_msg_owner(idx, NULL);
@@ -178,10 +176,9 @@ static int32_t mailbox_rx_client_reply(uint8_t idx, int32_t *reply)
 int32_t tfm_ns_mailbox_client_call(uint32_t call_type,
                                    const struct psa_client_params_t *params,
                                    int32_t client_id,
-                                   int32_t *reply)
+                                   struct mailbox_reply_t *reply)
 {
     uint8_t slot_idx = NUM_MAILBOX_QUEUE_SLOT;
-    int32_t reply_buf = 0x0;
     int32_t ret;
 
     if (!mailbox_queue_ptr) {
@@ -205,10 +202,7 @@ int32_t tfm_ns_mailbox_client_call(uint32_t call_type,
     mailbox_wait_reply(slot_idx);
 
     /* It requires SVCall if NS mailbox is put in privileged mode. */
-    ret = mailbox_rx_client_reply(slot_idx, &reply_buf);
-    if (ret == MAILBOX_SUCCESS) {
-        *reply = reply_buf;
-    }
+    ret = mailbox_rx_client_reply(slot_idx, reply);
 
 exit:
     if (tfm_ns_mailbox_os_lock_release() != MAILBOX_SUCCESS) {

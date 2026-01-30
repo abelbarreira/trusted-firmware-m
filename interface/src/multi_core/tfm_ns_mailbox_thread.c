@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2020-2021, Arm Limited. All rights reserved.
- * Copyright (c) 2024 Cypress Semiconductor Corporation (an Infineon company)
- * or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -32,7 +30,7 @@ struct ns_mailbox_req_t {
                                                    * task isolation
                                                    */
     const void                       *owner;      /* Handle of owner task. */
-    int32_t                          *reply;      /* Address of reply value
+    struct mailbox_reply_t           *reply;      /* Address of reply value
                                                    * belonging to owner task.
                                                    */
 
@@ -105,7 +103,7 @@ static int32_t mailbox_tx_client_call_msg(const struct ns_mailbox_req_t *req,
                                           uint8_t *slot_idx)
 {
     struct mailbox_msg_t *msg_ptr;
-    struct mailbox_reply_t *reply_ptr;
+    struct ns_mailbox_slot_t *slot_ns;
     uint32_t critical_section;
     uint8_t idx = NUM_MAILBOX_QUEUE_SLOT;
 
@@ -119,17 +117,17 @@ static int32_t mailbox_tx_client_call_msg(const struct ns_mailbox_req_t *req,
 #endif
 
     /* Fill the mailbox message */
-    msg_ptr = &mailbox_queue_ptr->queue[idx].msg;
+    msg_ptr = &mailbox_queue_ptr->slots[idx].msg;
     msg_ptr->call_type = req->call_type;
     memcpy(&msg_ptr->params, req->params_ptr, sizeof(msg_ptr->params));
     msg_ptr->client_id = req->client_id;
     MAILBOX_CLEAN_CACHE(msg_ptr, sizeof(*msg_ptr));
 
     /* Prepare the reply structure */
-    reply_ptr = &mailbox_queue_ptr->queue[idx].reply;
-    reply_ptr->owner = req->owner;
-    reply_ptr->reply = req->reply;
-    reply_ptr->woken_flag = req->woken_flag;
+    slot_ns = &mailbox_queue_ptr->slots_ns[idx];
+    slot_ns->owner = req->owner;
+    slot_ns->reply = req->reply;
+    slot_ns->woken_flag = req->woken_flag;
 
     /*
      * Memory check can be added here to prevent a malicious application
@@ -151,13 +149,13 @@ static int32_t mailbox_tx_client_call_msg(const struct ns_mailbox_req_t *req,
 
 static inline void ns_mailbox_set_reply_isr(uint8_t idx)
 {
-    struct ns_mailbox_slot_t *slot = &mailbox_queue_ptr->queue[idx];
-    int32_t *reply_ptr = slot->reply.reply;
+    struct mailbox_slot_t *slot = &mailbox_queue_ptr->slots[idx];
+    struct mailbox_reply_t *reply_ptr = mailbox_queue_ptr->slots_ns[idx].reply;
 
     if (reply_ptr) {
-        MAILBOX_INVALIDATE_CACHE(&slot->reply.return_val,
-                                 sizeof(slot->reply.return_val));
-        *reply_ptr = slot->reply.return_val;
+        MAILBOX_INVALIDATE_CACHE(&slot->reply,
+                                 sizeof(slot->reply));
+        *reply_ptr = slot->reply;
     }
 }
 
@@ -182,7 +180,7 @@ static int32_t mailbox_wait_reply(const struct ns_mailbox_req_t *req)
 int32_t tfm_ns_mailbox_client_call(uint32_t call_type,
                                    const struct psa_client_params_t *params,
                                    int32_t client_id,
-                                   int32_t *reply)
+                                   struct mailbox_reply_t *reply)
 {
     struct ns_mailbox_req_t req;
     uint8_t woken_flag = NOT_WOKEN;
@@ -282,7 +280,7 @@ int32_t tfm_ns_mailbox_wake_reply_owner_isr(void)
         /* Wake up the owner of this mailbox message */
         set_queue_slot_woken(idx);
 
-        task_handle = mailbox_queue_ptr->queue[idx].reply.owner;
+        task_handle = mailbox_queue_ptr->slots_ns[idx].owner;
         if (task_handle) {
             tfm_ns_mailbox_os_wake_task_isr(task_handle);
         }

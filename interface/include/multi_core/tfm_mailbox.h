@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2019-2024, Arm Limited. All rights reserved.
- * Copyright (c) 2022-2024 Cypress Semiconductor Corporation (an Infineon company)
- * or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -83,9 +81,9 @@ struct psa_client_params_t {
         struct {
             psa_handle_t    handle;
             int32_t         type;
-            const psa_invec *in_vec;
+            psa_invec       in_vec[PSA_MAX_IOVEC];
             size_t          in_len;
-            psa_outvec      *out_vec;
+            psa_outvec      out_vec[PSA_MAX_IOVEC];
             size_t          out_len;
         } psa_call_params;
 
@@ -116,6 +114,7 @@ struct mailbox_msg_t {
  */
 struct mailbox_reply_t {
     int32_t    return_val;
+    size_t     out_vec_len[PSA_MAX_IOVEC];  /* The size in bytes of the psa_call output vector */
 };
 
 /*
@@ -157,7 +156,7 @@ struct mailbox_status_t {
  */
 struct mailbox_init_t {
     /* Shared data with fixed size */
-    struct mailbox_status_t *status;
+    struct mailbox_status_t *status MAILBOX_ALIGN;
 
     /* Number of slots allocated by NS. */
     uint32_t slot_count;
