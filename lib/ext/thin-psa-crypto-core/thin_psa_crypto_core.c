@@ -175,20 +175,13 @@ static mbedtls_psa_external_random_context_t *g_ctx = NULL;
 #endif /* MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
 
 #if defined(CC3XX_CRYPTO_OPAQUE_KEYS)
-psa_status_t cc3xx_opaque_keys_attr_init(psa_key_attributes_t *attributes,
-                                         psa_key_id_t key_id,
-                                         psa_algorithm_t alg,
-                                         const uint8_t **key_buffer,
-                                         size_t *key_buffer_size)
+static psa_status_t cc3xx_get_opaque_key_attributes(mbedtls_svc_key_id_t key,
+                                                    psa_key_attributes_t *attributes,
+                                                    psa_algorithm_t alg)
 {
 #if !defined(MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER)
-
-    size_t key_size = cc3xx_get_opaque_key_buffer_size(key_id);
+    size_t key_size = cc3xx_get_opaque_key_buffer_size(key);
     psa_key_type_t key_type;
-
-    psa_set_key_lifetime(attributes, CC3XX_OPAQUE_KEY_LIFETIME);
-    psa_set_key_bits(attributes, PSA_BYTES_TO_BITS(key_size));
-    psa_set_key_id(attributes, key_id);
 
     switch (alg) {
     case PSA_ALG_CTR:
@@ -201,12 +194,33 @@ psa_status_t cc3xx_opaque_keys_attr_init(psa_key_attributes_t *attributes,
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
+    psa_set_key_lifetime(attributes, CC3XX_OPAQUE_KEY_LIFETIME);
+    psa_set_key_bits(attributes, PSA_BYTES_TO_BITS(key_size));
+    psa_set_key_id(attributes, key);
     psa_set_key_type(attributes, key_type);
 
-    g_pubkey_data[0] = cc3xx_get_builtin_key(key_id);
+    return PSA_SUCCESS;
+#else
+    return PSA_ERROR_NOT_SUPPORTED;
+#endif
+}
+
+static psa_status_t cc3xx_init_opaque_key(psa_key_attributes_t *attributes,
+                                          mbedtls_svc_key_id_t key,
+                                          psa_algorithm_t alg,
+                                          const uint8_t **key_buffer,
+                                          size_t *key_buffer_size)
+{
+#if !defined(MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER)
+    psa_status_t status = cc3xx_get_opaque_key_attributes(key, attributes, alg);
+    if (status != PSA_SUCCESS) {
+        return status;
+    }
+
+    g_pubkey_data[0] = cc3xx_get_builtin_key(key);
 
     *key_buffer = (const uint8_t*)g_pubkey_data;
-    *key_buffer_size = key_size;
+    *key_buffer_size = PSA_BITS_TO_BYTES(psa_get_key_bits(attributes));
 
     return PSA_SUCCESS;
 #else
@@ -281,9 +295,9 @@ static psa_status_t get_symmetric_builtin_key(psa_key_id_t key,
 #if defined(CC3XX_CRYPTO_OPAQUE_KEYS)
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
-    status = cc3xx_opaque_keys_attr_init(&g_key_slot.attr, key, alg,
-                                         (const uint8_t **) &g_key_slot.buf,
-                                         &g_key_slot.len);
+    status = cc3xx_init_opaque_key(&g_key_slot.attr, key, alg,
+                                   (const uint8_t **) &g_key_slot.buf,
+                                   &g_key_slot.len);
     if (status != PSA_SUCCESS) {
         return status;
     }
@@ -536,8 +550,8 @@ psa_status_t psa_mac_sign_setup(psa_mac_operation_t *operation,
     }
 #ifdef CC3XX_CRYPTO_OPAQUE_KEYS
     else {
-        status = cc3xx_opaque_keys_attr_init(&attributes, key, alg,
-                                             &key_buffer, &key_buffer_size);
+        status = cc3xx_init_opaque_key(&attributes, key, alg,
+                                       &key_buffer, &key_buffer_size);
         if (status != PSA_SUCCESS) {
             return status;
         }
@@ -575,8 +589,8 @@ psa_status_t psa_mac_verify_setup(psa_mac_operation_t *operation,
     }
 #ifdef CC3XX_CRYPTO_OPAQUE_KEYS
     else {
-        status = cc3xx_opaque_keys_attr_init(&attributes, key, alg,
-                                             &key_buffer, &key_buffer_size);
+        status = cc3xx_init_opaque_key(&attributes, key, alg,
+                                       &key_buffer, &key_buffer_size);
         if (status != PSA_SUCCESS) {
             return status;
         }
@@ -620,13 +634,14 @@ psa_status_t psa_mac_abort(psa_mac_operation_t *operation)
 }
 
 EXTERNAL_PSA_API(psa_mac_compute,
-        (psa_key_id_t key, psa_algorithm_t alg, const uint8_t *input,
+        (mbedtls_svc_key_id_t key, psa_algorithm_t alg, const uint8_t *input,
          size_t input_length, uint8_t *mac, size_t mac_size, size_t *mac_length),
         key, alg, input, input_length, mac, mac_size, mac_length)
 {
     psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
     const uint8_t *key_buffer;
     size_t key_buffer_size;
+    uint8_t operation_mac_size = 0;
     psa_status_t status = PSA_ERROR_INVALID_HANDLE;
 
     if (!input_length) {
@@ -650,8 +665,8 @@ EXTERNAL_PSA_API(psa_mac_compute,
     }
 #ifdef CC3XX_CRYPTO_OPAQUE_KEYS
     else {
-        status = cc3xx_opaque_keys_attr_init(&attributes, key, alg,
-                                             &key_buffer, &key_buffer_size);
+        status = cc3xx_init_opaque_key(&attributes, key, alg,
+                                       &key_buffer, &key_buffer_size);
         if (status != PSA_SUCCESS) {
             FIH_RET(status);
         }
@@ -664,6 +679,11 @@ EXTERNAL_PSA_API(psa_mac_compute,
         FIH_RET(status);
     }
 
+    operation_mac_size = PSA_MAC_LENGTH(psa_get_key_type(&attributes),
+                                        psa_get_key_bits(&attributes),
+                                        alg);
+    assert(mac_size >= operation_mac_size);
+
     FIH_RET(psa_driver_wrapper_mac_compute(
                         &attributes,
                         key_buffer,
@@ -674,7 +694,6 @@ EXTERNAL_PSA_API(psa_mac_compute,
                         mac,
                         mac_size,
                         mac_length));
-
 }
 
 psa_status_t psa_key_derivation_setup(psa_key_derivation_operation_t *operation,
@@ -683,18 +702,21 @@ psa_status_t psa_key_derivation_setup(psa_key_derivation_operation_t *operation,
     assert(operation != NULL);
     assert(alg == PSA_ALG_SP800_108_COUNTER_CMAC);
 
-#ifdef PSA_WANT_ALG_SP800_108_COUNTER_CMAC
     /* Ensure all of the context is zeroized */
     memset(operation, 0, sizeof(*operation));
 
     operation->alg = alg;
 
-    return PSA_SUCCESS;
+#if defined(PSA_WANT_ALG_SP800_108_COUNTER_CMAC)
+    if (PSA_ALG_IS_SP800_108_COUNTER_CMAC(alg)) {
+        operation->capacity = SP800_108_INIT_CAPACITY;
+    } else
+#endif
+    {
+        operation->capacity = SIZE_MAX;
+    }
 
-#else /* PSA_WANT_ALG_SP800_108_COUNTER_CMAC */
-    FATAL_ERR(PSA_ERROR_NOT_SUPPORTED);
-    return PSA_ERROR_NOT_SUPPORTED;
-#endif /* PSA_WANT_ALG_SP800_108_COUNTER_CMAC */
+    return PSA_SUCCESS;
 }
 
 psa_status_t psa_key_derivation_set_capacity(
@@ -702,181 +724,275 @@ psa_status_t psa_key_derivation_set_capacity(
     size_t capacity)
 {
     assert(operation != NULL);
-    assert(operation->alg == PSA_ALG_SP800_108_COUNTER_CMAC);
-    /*
-     * Based on PSA Crypto API spec:
-     *  Subsequent calls to psa_key_derivation_set_capacity() are not
-     *  permitted for this algorithm.
-     */
-    assert(operation->capacity == 0);
+    assert(capacity <= operation->capacity);
     /* For simplicity, only support 4-byte aligned capacity */
     assert((capacity % sizeof(uint32_t)) == 0);
 
     operation->capacity = capacity;
 
 #ifdef PSA_WANT_ALG_SP800_108_COUNTER_CMAC
-    psa_sp800_108_cmac_key_derivation_t *ctx = &operation->ctx.sp800_108_cmac;
-    ctx->L_bits = capacity * 8;
+    /* Capacity must be set only once */
+    if (PSA_ALG_IS_SP800_108_COUNTER_CMAC(operation->alg)) {
+        assert(!operation->ctx.sp800_108_cmac.capacity_set);
+        operation->ctx.sp800_108_cmac.capacity_set = true;
+    }
 #endif /* PSA_WANT_ALG_SP800_108_COUNTER_CMAC */
 
     return PSA_SUCCESS;
 }
-EXTERNAL_PSA_API(psa_key_derivation_input_key,
-    (psa_key_derivation_operation_t *operation, psa_key_derivation_step_t step, psa_key_id_t key),
-    operation, step, key)
+
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC)
+static psa_status_t psa_sp800_108_counter_cmac_input(psa_sp800_108_cmac_key_derivation_t *kdf,
+                                                     psa_key_derivation_step_t step,
+                                                     const uint8_t *data,
+                                                     size_t data_length)
 {
-    assert(operation != NULL);
-    assert(operation->alg == PSA_ALG_SP800_108_COUNTER_CMAC);
-    assert(step == PSA_KEY_DERIVATION_INPUT_SECRET);
+    assert(kdf->state < SP800_108_COUNTER_CMAC_STATE_CONTEXT_PROVIDED);
 
-#ifdef PSA_WANT_ALG_SP800_108_COUNTER_CMAC
-    psa_sp800_108_cmac_key_derivation_t *ctx = &operation->ctx.sp800_108_cmac;
+    /* Inputs must be passed in this order key -> label -> context */
+    switch (step) {
+    case PSA_KEY_DERIVATION_INPUT_LABEL:
+        assert(kdf->state == SP800_108_COUNTER_CMAC_STATE_KEYED);
+        /* fall through */
+    case PSA_KEY_DERIVATION_INPUT_CONTEXT: {
+        const size_t ctx_input_offset = (step == PSA_KEY_DERIVATION_INPUT_LABEL) ?
+                                            SP800_108_INPUT_LABEL_OFFSET(kdf) :
+                                            SP800_108_INPUT_CONTEXT_OFFSET(kdf);
+        const size_t ctx_input_max_size = (step == PSA_KEY_DERIVATION_INPUT_LABEL) ?
+                                            SP800_108_LABEL_MAX_SIZE :
+                                            SP800_108_CONTEXT_MAX_SIZE;
+        size_t *ctx_input_length = (step == PSA_KEY_DERIVATION_INPUT_LABEL) ?
+                                            &kdf->label_length :
+                                            &kdf->context_length;
+        if ((step == PSA_KEY_DERIVATION_INPUT_CONTEXT) &&
+            (kdf->state != SP800_108_COUNTER_CMAC_STATE_LABELED)) {
+            FIH_RET(PSA_ERROR_BAD_STATE);
+        }
 
-    /* The key must be provided before label and context */
-    assert(!ctx->label_provided);
-    assert(!ctx->context_provided);
+        assert(data_length <= ctx_input_max_size);
 
-    ctx->key_provided = true;
-    ctx->key = key;
-#endif /* PSA_WANT_ALG_SP800_108_COUNTER_CMAC */
-
-    return PSA_SUCCESS;
+        memcpy(kdf->inputs + ctx_input_offset, data, data_length);
+        *ctx_input_length = data_length;
+        kdf->state++;
+        return PSA_SUCCESS;
+    }
+    default:
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
 }
+#endif /* MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC */
 
 EXTERNAL_PSA_API(psa_key_derivation_input_bytes,
     (psa_key_derivation_operation_t *operation, psa_key_derivation_step_t step,
     const uint8_t *data, size_t data_length),
     operation, step, data, data_length)
 {
+    psa_status_t status;
+
+    assert(!!operation);
+    assert(!!operation->alg);
+
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC)
+    if (PSA_ALG_IS_SP800_108_COUNTER_CMAC(operation->alg)) {
+        status = psa_sp800_108_counter_cmac_input(&operation->ctx.sp800_108_cmac,
+                                                  step, data, data_length);
+    } else
+#endif /* MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC */
+    {
+        status = PSA_ERROR_BAD_STATE;
+    }
+
+    if (status != PSA_SUCCESS) {
+        psa_key_derivation_abort(operation);
+    }
+
+    FIH_RET(status);
+}
+
+EXTERNAL_PSA_API(psa_key_derivation_input_key,
+    (psa_key_derivation_operation_t *operation, psa_key_derivation_step_t step, mbedtls_svc_key_id_t key),
+    operation, step, key)
+{
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    psa_status_t status = PSA_ERROR_INVALID_HANDLE;
+
     assert(operation != NULL);
     assert(operation->alg == PSA_ALG_SP800_108_COUNTER_CMAC);
+    assert(step == PSA_KEY_DERIVATION_INPUT_SECRET);
 
-    if (!data_length) {
+    /* Prefer static slot if it matches */
+    if (g_key_slot.is_valid && (g_key_slot.key_id == key)) {
+        status = psa_get_key_attributes(key, &attributes);
+        if (status != PSA_SUCCESS) {
+            goto exit;
+        }
+    }
+#ifdef CC3XX_CRYPTO_OPAQUE_KEYS
+    else {
+        psa_algorithm_t alg = PSA_ALG_IS_SP800_108_COUNTER_CMAC(operation->alg) ?
+                                PSA_ALG_CMAC : operation->alg;
+        status = cc3xx_get_opaque_key_attributes(key,
+                                                 &attributes,
+                                                 alg);
+        if (status != PSA_SUCCESS) {
+            goto exit;
+        }
+
+    }
+#endif /* CC3XX_CRYPTO_OPAQUE_KEYS */
+
+    if (status == PSA_ERROR_INVALID_HANDLE) {
+        FATAL_ERR(status);
+        goto exit;
+    }
+
+
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC)
+    if (PSA_ALG_IS_SP800_108_COUNTER_CMAC(operation->alg)) {
+        psa_sp800_108_cmac_key_derivation_t *kdf = &operation->ctx.sp800_108_cmac;
+        assert(kdf->state == SP800_108_COUNTER_CMAC_STATE_INIT);
+
+        kdf->key = key;
+        kdf->block_size = PSA_MAC_LENGTH(attributes.type,
+                                         attributes.bits,
+                                         PSA_ALG_CMAC);
+        kdf->state = SP800_108_COUNTER_CMAC_STATE_KEYED;
+        status = PSA_SUCCESS;
+    } else
+#endif /* MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC */
+    {
+        status = PSA_ERROR_BAD_STATE;
+    }
+
+exit:
+    FIH_RET(status);
+}
+
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC)
+static psa_status_t psa_sp800_108_counter_cmac_read(psa_sp800_108_cmac_key_derivation_t *kdf,
+                                                    size_t capacity,
+                                                    uint8_t *output,
+                                                    size_t output_length)
+{
+
+    const size_t num_blocks = PSA_ROUND_UP_TO_MULTIPLE(kdf->block_size, output_length) /
+                                kdf->block_size;
+    const size_t unaligned_block_size = output_length % kdf->block_size;
+    psa_status_t status;
+
+    if (!num_blocks) {
+        /* Nothing to do */
         return PSA_SUCCESS;
     }
 
-#ifdef PSA_WANT_ALG_SP800_108_COUNTER_CMAC
-    psa_sp800_108_cmac_key_derivation_t *ctx = &operation->ctx.sp800_108_cmac;
-    const size_t ctx_input_offset = (step == PSA_KEY_DERIVATION_INPUT_LABEL) ?
-                                        SP800_108_INPUT_LABEL_OFFSET(ctx) :
-                                        SP800_108_INPUT_CONTEXT_OFFSET(ctx);
-    const size_t ctx_input_max_size = (step == PSA_KEY_DERIVATION_INPUT_LABEL) ?
-                                        SP800_108_LABEL_MAX_SIZE :
-                                        SP800_108_CONTEXT_MAX_SIZE;
-    size_t *ctx_input_length = (step == PSA_KEY_DERIVATION_INPUT_LABEL) ?
-                                        &ctx->label_length :
-                                        &ctx->context_length;
-    bool *ctx_input_provided = (step == PSA_KEY_DERIVATION_INPUT_LABEL) ?
-                                        &ctx->label_provided :
-                                        &ctx->context_provided;
+    assert(kdf->state >= SP800_108_COUNTER_CMAC_STATE_KEYED);
 
-    assert((step == PSA_KEY_DERIVATION_INPUT_LABEL) || (step == PSA_KEY_DERIVATION_INPUT_CONTEXT));
+    if (kdf->state != SP800_108_COUNTER_CMAC_STATE_OUTPUT) {
+        uint8_t *k0_input = &kdf->inputs[SP800_108_INTERATION_COUNTER_SIZE];
+        const size_t k0_input_size = kdf->label_length +
+                                     SP800_108_NULL_BYTE_SIZE +
+                                     kdf->context_length +
+                                     SP800_108_ENCODED_LENGTH_SIZE;
+        uint8_t *k0 = &kdf->inputs[SP800_108_INPUT_K0_OFFSET(kdf)];
+        size_t k0_length = 0;
 
-    /* Inputs must be passed in this order key -> label -> context */
-    assert(ctx->key_provided);
-    assert(ctx->label_provided || (step == PSA_KEY_DERIVATION_INPUT_LABEL));
+        /* copy L_bits in BE */
+        MBEDTLS_PUT_UINT32_BE(
+                PSA_BYTES_TO_BITS(capacity),
+                kdf->inputs,
+                SP800_108_INPUT_ENCODED_LENGTH_OFFSET(kdf));
 
-    /* Check buffer overflow */
-    assert(data_length <= ctx_input_max_size);
+        /**
+         * Set to true in case set_capacity() was never called.
+         * It is not possible to change the capacity at this stage.
+         */
+        kdf->capacity_set = true;
 
-    memcpy(ctx->inputs + ctx_input_offset, data, data_length);
+        /* Compute K0 */
+        status =  psa_mac_compute(kdf->key,
+                                  PSA_ALG_CMAC,
+                                  k0_input,
+                                  k0_input_size,
+                                  k0,
+                                  kdf->block_size,
+                                  &k0_length);
+        if (status != PSA_SUCCESS) {
+            return status;
+        }
 
-    *ctx_input_length = data_length;
-    *ctx_input_provided = true;
-#endif /* PSA_WANT_ALG_SP800_108_COUNTER_CMAC */
+        assert(k0_length == kdf->block_size);
+
+        kdf->counter = 1;
+        kdf->state = SP800_108_COUNTER_CMAC_STATE_OUTPUT;
+    }
+
+    for (size_t block = 0; block < num_blocks; block++) {
+        uint8_t tmp_tag[PSA_MAC_MAX_SIZE]; /* used only for the last partial block */
+        uint8_t *dst_ptr = (uint8_t *)output + block * kdf->block_size;
+
+        const bool is_last = (block == (num_blocks - 1));
+        const size_t last_copy_size = (is_last && unaligned_block_size > 0)
+                                          ? unaligned_block_size
+                                          : kdf->block_size;
+        const bool is_partial = (last_copy_size != kdf->block_size);
+
+        uint8_t *mac_out = is_partial ? tmp_tag : dst_ptr;
+        size_t mac_len = 0;
+
+        /* Copy counter in BE to the input buffer */
+        MBEDTLS_PUT_UINT32_BE(kdf->counter,
+                              kdf->inputs,
+                              SP800_108_INPUT_INTERATION_COUNTER_OFFSET(kdf));
+
+        status = psa_mac_compute(kdf->key,
+                                 PSA_ALG_CMAC,
+                                 kdf->inputs,
+                                 SP800_108_INPUT_LENGTH(kdf),
+                                 mac_out,
+                                 kdf->block_size,
+                                 &mac_len);
+        if (status != PSA_SUCCESS) {
+            return status;
+        }
+
+        assert(mac_len == kdf->block_size);
+
+        if (is_partial) {
+            /* copy only requested bytes into output */
+            memcpy(dst_ptr, mac_out, last_copy_size);
+        }
+
+        kdf->counter++;
+    }
 
     return PSA_SUCCESS;
 }
+#endif /* MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC */
 
 EXTERNAL_PSA_API(psa_key_derivation_output_bytes,
     (psa_key_derivation_operation_t *operation, uint8_t *output, size_t output_length),
     operation, output, output_length)
 {
-    assert(operation != NULL);
-    assert(operation->alg == PSA_ALG_SP800_108_COUNTER_CMAC);
-    assert(output_length <= operation->capacity);
-
-#ifdef PSA_WANT_ALG_SP800_108_COUNTER_CMAC
-    psa_sp800_108_cmac_key_derivation_t *ctx = &operation->ctx.sp800_108_cmac;
-    uint8_t *k0_input = &ctx->inputs[SP800_108_INTERATION_COUNTER_SIZE];
-    const size_t k0_input_size = ctx->label_length +
-                                 SP800_108_NULL_BYTE_SIZE +
-                                 ctx->context_length +
-                                 SP800_108_ENCODED_LENGTH_SIZE;
-    uint8_t *k0 = &ctx->inputs[SP800_108_INPUT_K0_OFFSET(ctx)];
-    size_t k0_length = 0;
-    const uint8_t l_total_length[] = {
-        (ctx->L_bits >> 24) & 0xFF,
-        (ctx->L_bits >> 16) & 0xFF,
-        (ctx->L_bits >> 8) & 0xFF,
-         ctx->L_bits & 0xFF};
-    const size_t num_blocks = ROUND_UP(output_length, PSA_AEAD_TAG_MAX_SIZE) /
-                                PSA_AEAD_TAG_MAX_SIZE;
-    const size_t unaligned_block_size = output_length % PSA_AEAD_TAG_MAX_SIZE;
     psa_status_t status;
 
-    /* copy L bits */
-    memcpy(&ctx->inputs[SP800_108_INPUT_ENCODED_LENGTH_OFFSET(ctx)],
-           l_total_length,
-           SP800_108_ENCODED_LENGTH_SIZE);
-
-    /* Compute K0 */
-    status =  psa_mac_compute(ctx->key,
-                              PSA_ALG_CMAC,
-                              k0_input,
-                              k0_input_size,
-                              k0,
-                              SP800_108_K0_SIZE,
-                              &k0_length);
-    if (status != PSA_SUCCESS) {
-        FATAL_ERR(status);
-        return status;
-    }
-
-    assert(k0_length == SP800_108_K0_SIZE);
-
-    for (size_t idx = ctx->counter; idx < num_blocks; idx++) {
-        uint8_t *output_key_offset = ((uint8_t *) output) + (idx * PSA_AEAD_TAG_MAX_SIZE);
-        const size_t tag_size = ((idx == num_blocks - 1) && (unaligned_block_size > 0)) ?
-                                    unaligned_block_size : PSA_AEAD_TAG_MAX_SIZE;
-        size_t tag_length = 0;
-        /* [i]2 is encoded on 4 bytes, i.e. r = 32, in binary. Assumes processor is LE */
-        const size_t i_idx = idx + 1;
-        const uint8_t i_encoded[] = {
-            (i_idx >> 24) & 0xFF,
-            (i_idx >> 16) & 0xFF,
-            (i_idx >> 8) & 0xFF,
-            i_idx & 0xFF};
-
-        /* copy the encoded iteration counter */
-        memcpy(&ctx->inputs[SP800_108_INPUT_INTERATION_COUNTER_OFFSET(ctx)],
-           i_encoded,
-           SP800_108_INTERATION_COUNTER_SIZE);
-
-        /* Compute Ki */
-        status =  psa_mac_compute(ctx->key,
-                                  PSA_ALG_CMAC,
-                                  ctx->inputs,
-                                  SP800_108_INPUT_LENGTH(ctx),
-                                  output_key_offset,
-                                  tag_size,
-                                  &tag_length);
-        if (status != PSA_SUCCESS) {
-            FATAL_ERR(status);
-            return status;
-        }
-
-        assert(tag_length == tag_size);
-    }
-
-    ctx->counter = (unaligned_block_size > 0) ?
-                        ctx->counter + num_blocks - 1:
-                        ctx->counter + num_blocks;
-#endif /* PSA_WANT_ALG_SP800_108_COUNTER_CMAC */
+    assert(!!operation);
+    assert(!!operation->alg);
+    assert(output_length <= operation->capacity);
 
     operation->capacity -= output_length;
 
-    return PSA_SUCCESS;
+#if defined(MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC)
+    if (PSA_ALG_IS_SP800_108_COUNTER_CMAC(operation->alg)) {
+        status = psa_sp800_108_counter_cmac_read(&operation->ctx.sp800_108_cmac,
+                                                 operation->capacity + output_length,
+                                                 output, output_length);
+    } else
+#endif /* MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC */
+    {
+        status = PSA_ERROR_BAD_STATE;
+    }
+
+    FIH_RET(status);
 }
 
 psa_status_t psa_key_derivation_abort(psa_key_derivation_operation_t *operation)
@@ -1322,8 +1438,8 @@ static psa_status_t psa_cipher_setup(psa_cipher_operation_t *operation,
     }
 #ifdef CC3XX_CRYPTO_OPAQUE_KEYS
     else {
-        status = cc3xx_opaque_keys_attr_init(&attributes, key, alg,
-                                             &key_buffer, &key_buffer_size);
+        status = cc3xx_init_opaque_key(&attributes, key, alg,
+                                       &key_buffer, &key_buffer_size);
         if (status != PSA_SUCCESS) {
             return status;
         }
@@ -1540,8 +1656,8 @@ EXTERNAL_PSA_API(psa_aead_encrypt_setup,
     size_t key_buffer_size;
     psa_status_t status;
 
-    status = cc3xx_opaque_keys_attr_init(&attributes, key_id, alg,
-                                         &key_buffer, &key_buffer_size);
+    status = cc3xx_init_opaque_key(&attributes, key_id, alg,
+                                   &key_buffer, &key_buffer_size);
     if (status != PSA_SUCCESS) {
         FIH_RET(status);
     }
@@ -1576,8 +1692,8 @@ EXTERNAL_PSA_API(psa_aead_decrypt_setup,
     size_t key_buffer_size;
     psa_status_t status;
 
-    status = cc3xx_opaque_keys_attr_init(&attributes, key_id, alg,
-                                         &key_buffer, &key_buffer_size);
+    status = cc3xx_init_opaque_key(&attributes, key_id, alg,
+                                   &key_buffer, &key_buffer_size);
     if (status != PSA_SUCCESS) {
         FIH_RET(status);
     }

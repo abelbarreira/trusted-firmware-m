@@ -1781,6 +1781,17 @@
 
 #define PSA_ALG_SP800_108_COUNTER_CMAC          ((psa_algorithm_t) 0x08000800)
 
+/** Whether the specified algorithm is NIST SP800-108 Counter CMAC.
+ *
+ * \param alg An algorithm identifier (value of type #psa_algorithm_t).
+ *
+ * \return 1 if \c alg is NIST SP800 -108 Counter CMAC.
+ *         This macro may return either 0 or 1 if \c alg is not a supported
+ *         key derivation algorithm identifier.
+ */
+#define PSA_ALG_IS_SP800_108_COUNTER_CMAC(alg)                  \
+    ((alg) == PSA_ALG_SP800_108_COUNTER_CMAC)
+
 #define PSA_ALG_HKDF_BASE                       ((psa_algorithm_t) 0x08000100)
 /** Macro to build an HKDF algorithm.
  *

@@ -1,7 +1,7 @@
-From 76dd933c69e40f22e1eda556ddc99664ed438ff6 Mon Sep 17 00:00:00 2001
+From d2a3e5b5c2c059135a593cc26a8be94685e429cf Mon Sep 17 00:00:00 2001
 From: David Vincze <david.vincze@arm.com>
-Date: Wed, 17 Dec 2025 20:13:30 +0000
-Subject: [PATCH 10/13] Define base attributes and structure for SP800-108 CMAC
+Date: Wed, 4 Mar 2026 10:47:30 +0000
+Subject: [PATCH 10/14] Define base attributes and structure for SP800-108 CMAC
 
 This adds support for CMAC-based, counter mode key-derivation function,
 using the construction recommended by NIST Special Publication 800-108r1
@@ -11,15 +11,15 @@ using the construction recommended by NIST Special Publication 800-108r1
 
 Signed-off-by: Amjad Ouled-Ameur <amjad.ouled-ameur@arm.com>
 ---
- .../private/config_adjust_legacy_from_psa.h   |  4 ++
+ .../private/config_adjust_legacy_from_psa.h   |  4 +
  .../psa/crypto_adjust_config_dependencies.h   |  3 +-
- include/psa/crypto_builtin_key_derivation.h   | 70 +++++++++++++++++++
+ include/psa/crypto_builtin_key_derivation.h   | 82 +++++++++++++++++++
  .../crypto_driver_contexts_key_derivation.h   |  3 +
- include/psa/crypto_values.h                   | 10 +++
- 5 files changed, 89 insertions(+), 1 deletion(-)
+ include/psa/crypto_values.h                   | 21 +++++
+ 5 files changed, 112 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/builtin/include/mbedtls/private/config_adjust_legacy_from_psa.h b/drivers/builtin/include/mbedtls/private/config_adjust_legacy_from_psa.h
-index 5e1aae79c..dc2db928c 100644
+index 5e1aae7..dc2db92 100644
 --- a/drivers/builtin/include/mbedtls/private/config_adjust_legacy_from_psa.h
 +++ b/drivers/builtin/include/mbedtls/private/config_adjust_legacy_from_psa.h
 @@ -839,4 +839,8 @@
@@ -32,7 +32,7 @@ index 5e1aae79c..dc2db928c 100644
 +
  #endif /* MBEDTLS_CONFIG_ADJUST_LEGACY_FROM_PSA_H */
 diff --git a/include/psa/crypto_adjust_config_dependencies.h b/include/psa/crypto_adjust_config_dependencies.h
-index 8ed7c4de3..8fb92573f 100644
+index 8ed7c4d..8fb9257 100644
 --- a/include/psa/crypto_adjust_config_dependencies.h
 +++ b/include/psa/crypto_adjust_config_dependencies.h
 @@ -43,7 +43,8 @@
@@ -46,15 +46,17 @@ index 8ed7c4de3..8fb92573f 100644
  #define PSA_WANT_ALG_CMAC 1
  #endif
 diff --git a/include/psa/crypto_builtin_key_derivation.h b/include/psa/crypto_builtin_key_derivation.h
-index 1115b5079..88c5e5dd4 100644
+index 1115b50..a679089 100644
 --- a/include/psa/crypto_builtin_key_derivation.h
 +++ b/include/psa/crypto_builtin_key_derivation.h
-@@ -117,4 +117,74 @@ typedef struct {
+@@ -117,4 +117,86 @@ typedef struct {
  } psa_pbkdf2_key_derivation_t;
  #endif /* PSA_HAVE_SOFT_PBKDF2 */
  
 +#if defined(MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC)
 +#include <stdbool.h>
++
++#define SP800_108_INIT_CAPACITY (0x1fffffff)
 +
 +#define SP800_108_INTERATION_COUNTER_SIZE   4
 +
@@ -68,8 +70,9 @@ index 1115b5079..88c5e5dd4 100644
 +#define SP800_108_CONTEXT_MAX_SIZE          48
 +#endif
 +
++#define SP800_108_K0_MAX_SIZE               PSA_MAC_MAX_SIZE
++
 +#define SP800_108_ENCODED_LENGTH_SIZE       4
-+#define SP800_108_K0_SIZE                   PSA_AEAD_TAG_MAX_SIZE
 +
 +#define SP800_108_TOTAL_INPUT_MAX_SIZE \
 +    (SP800_108_INTERATION_COUNTER_SIZE + \
@@ -77,7 +80,7 @@ index 1115b5079..88c5e5dd4 100644
 +     SP800_108_NULL_BYTE_SIZE + \
 +     SP800_108_CONTEXT_MAX_SIZE + \
 +     SP800_108_ENCODED_LENGTH_SIZE + \
-+     SP800_108_K0_SIZE)
++     SP800_108_K0_MAX_SIZE)
 +
 +#define SP800_108_INPUT_INTERATION_COUNTER_OFFSET(ctx) (0)
 +
@@ -85,13 +88,13 @@ index 1115b5079..88c5e5dd4 100644
 +    (SP800_108_INTERATION_COUNTER_SIZE)
 +
 +#define SP800_108_INPUT_CONTEXT_OFFSET(ctx) \
-+    (SP800_108_INPUT_LABEL_OFFSET(x) + \
-+     ctx->label_length + \
++    (SP800_108_INPUT_LABEL_OFFSET(ctx) + \
++     (ctx)->label_length + \
 +     SP800_108_NULL_BYTE_SIZE)
 +
 +#define SP800_108_INPUT_ENCODED_LENGTH_OFFSET(ctx) \
 +    (SP800_108_INPUT_CONTEXT_OFFSET(ctx) + \
-+     ctx->context_length)
++     (ctx)->context_length)
 +
 +#define SP800_108_INPUT_K0_OFFSET(ctx) \
 +    (SP800_108_INPUT_ENCODED_LENGTH_OFFSET(ctx) + \
@@ -99,33 +102,42 @@ index 1115b5079..88c5e5dd4 100644
 +
 +#define SP800_108_INPUT_LENGTH(ctx) \
 +    (SP800_108_INPUT_K0_OFFSET(ctx) + \
-+     SP800_108_K0_SIZE)
++     (ctx)->block_size)
++
++enum sp800_108_counter_cmac_state {
++    SP800_108_COUNTER_CMAC_STATE_INIT,              /* no input yet */
++    SP800_108_COUNTER_CMAC_STATE_KEYED,             /* got key */
++    SP800_108_COUNTER_CMAC_STATE_LABELED,           /* label provided */
++    SP800_108_COUNTER_CMAC_STATE_CONTEXT_PROVIDED,  /* context provided */
++    SP800_108_COUNTER_CMAC_STATE_OUTPUT     /* output started */
++};
 +
 +typedef struct
 +{
-+    uint8_t inputs[SP800_108_TOTAL_INPUT_MAX_SIZE];
++    uint8_t MBEDTLS_PRIVATE(inputs)[SP800_108_TOTAL_INPUT_MAX_SIZE];
 +
 +    /* The key must be a block-cipher that is compatible with the CMAC algorithm */
-+    psa_key_id_t MBEDTLS_PRIVATE(key);
-+    bool MBEDTLS_PRIVATE(key_provided);
++    mbedtls_svc_key_id_t MBEDTLS_PRIVATE(key);
++
++    /* The block size depends on the key type and bits */
++    size_t block_size;
 +
 +    /* Label, unless omitted, must be passed after the key */
-+    bool MBEDTLS_PRIVATE(label_provided);
 +    size_t MBEDTLS_PRIVATE(label_length);
 +
 +    /* Context, unless omitted, must be passed after the label */
-+    bool MBEDTLS_PRIVATE(context_provided);
 +    size_t MBEDTLS_PRIVATE(context_length);
 +
 +    /* Derivation state */
-+    size_t MBEDTLS_PRIVATE(L_bits); /* total output length in bits */
++    bool capacity_set; /* capacity must be set only once */
++    enum sp800_108_counter_cmac_state MBEDTLS_PRIVATE(state);
 +    size_t MBEDTLS_PRIVATE(counter); /* 1-based */
 +} psa_sp800_108_cmac_key_derivation_t;
 +#endif /* MBEDTLS_PSA_BUILTIN_ALG_SP800_108_COUNTER_CMAC */
 +
  #endif /* PSA_CRYPTO_BUILTIN_KEY_DERIVATION_H */
 diff --git a/include/psa/crypto_driver_contexts_key_derivation.h b/include/psa/crypto_driver_contexts_key_derivation.h
-index f43d850a9..fca52225e 100644
+index f43d850..fca5222 100644
 --- a/include/psa/crypto_driver_contexts_key_derivation.h
 +++ b/include/psa/crypto_driver_contexts_key_derivation.h
 @@ -48,6 +48,9 @@ typedef union {
@@ -139,19 +151,30 @@ index f43d850a9..fca52225e 100644
  
  #endif /* PSA_CRYPTO_DRIVER_CONTEXTS_KEY_DERIVATION_H */
 diff --git a/include/psa/crypto_values.h b/include/psa/crypto_values.h
-index 33c35e5fa..63c19bd44 100644
+index 33c35e5..e0eeed2 100644
 --- a/include/psa/crypto_values.h
 +++ b/include/psa/crypto_values.h
-@@ -1779,6 +1779,8 @@
+@@ -1779,6 +1779,19 @@
       ((alg) & PSA_ALG_HASH_MASK) | PSA_ALG_CATEGORY_HASH :      \
       0)
  
 +#define PSA_ALG_SP800_108_COUNTER_CMAC          ((psa_algorithm_t) 0x08000800)
 +
++/** Whether the specified algorithm is NIST SP800-108 Counter CMAC.
++ *
++ * \param alg An algorithm identifier (value of type #psa_algorithm_t).
++ *
++ * \return 1 if \c alg is NIST SP800 -108 Counter CMAC.
++ *         This macro may return either 0 or 1 if \c alg is not a supported
++ *         key derivation algorithm identifier.
++ */
++#define PSA_ALG_IS_SP800_108_COUNTER_CMAC(alg)                  \
++    ((alg) == PSA_ALG_SP800_108_COUNTER_CMAC)
++
  #define PSA_ALG_HKDF_BASE                       ((psa_algorithm_t) 0x08000100)
  /** Macro to build an HKDF algorithm.
   *
-@@ -2742,6 +2744,14 @@ static inline int mbedtls_svc_key_id_is_null(mbedtls_svc_key_id_t key)
+@@ -2742,6 +2755,14 @@ static inline int mbedtls_svc_key_id_is_null(mbedtls_svc_key_id_t key)
   */
  #define PSA_KEY_DERIVATION_INPUT_COST       ((psa_key_derivation_step_t) 0x0205)
  
@@ -167,5 +190,5 @@ index 33c35e5fa..63c19bd44 100644
  
  /** \defgroup helper_macros Helper macros
 -- 
-2.34.1
+2.43.0
 
