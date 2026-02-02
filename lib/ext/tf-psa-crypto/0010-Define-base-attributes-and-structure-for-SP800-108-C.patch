@@ -1,6 +1,6 @@
-From d2a3e5b5c2c059135a593cc26a8be94685e429cf Mon Sep 17 00:00:00 2001
+From 5cce150a11201023d7a7b874d9caa0076b285921 Mon Sep 17 00:00:00 2001
 From: David Vincze <david.vincze@arm.com>
-Date: Wed, 4 Mar 2026 10:47:30 +0000
+Date: Thu, 5 Mar 2026 13:57:19 +0000
 Subject: [PATCH 10/14] Define base attributes and structure for SP800-108 CMAC
 
 This adds support for CMAC-based, counter mode key-derivation function,
@@ -61,13 +61,13 @@ index 1115b50..a679089 100644
 +#define SP800_108_INTERATION_COUNTER_SIZE   4
 +
 +#ifndef SP800_108_LABEL_MAX_SIZE
-+#define SP800_108_LABEL_MAX_SIZE            48
++#define SP800_108_LABEL_MAX_SIZE            50
 +#endif
 +
 +#define SP800_108_NULL_BYTE_SIZE            1
 +
 +#ifndef SP800_108_CONTEXT_MAX_SIZE
-+#define SP800_108_CONTEXT_MAX_SIZE          48
++#define SP800_108_CONTEXT_MAX_SIZE          50
 +#endif
 +
 +#define SP800_108_K0_MAX_SIZE               PSA_MAC_MAX_SIZE

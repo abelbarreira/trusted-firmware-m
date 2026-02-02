@@ -1,7 +1,7 @@
-From c409562dd7113d36af15fdd06817f0ed37142f7f Mon Sep 17 00:00:00 2001
+From 4075af21b32fcc05e468463c2f1c2e2b92a93d32 Mon Sep 17 00:00:00 2001
 From: Antonio de Angelis <Antonio.deAngelis@arm.com>
-Date: Thu, 21 Mar 2024 11:44:56 +0000
-Subject: [PATCH 02/13] Add TF-M Builtin Key Loader driver entry points
+Date: Thu, 5 Mar 2026 13:57:18 +0000
+Subject: [PATCH 02/14] Add TF-M Builtin Key Loader driver entry points
 
 TF-M requires a mechanism to leverage the drivers
 and builtin keys at the same time to allow for
@@ -18,7 +18,7 @@ Co-authored-by: Antonio de Angelis <antonio.deangelis@arm.com>
  3 files changed, 143 insertions(+), 9 deletions(-)
 
 diff --git a/core/psa_crypto.c b/core/psa_crypto.c
-index 2d3b07ea2..de131f58d 100644
+index 2d3b07e..de131f5 100644
 --- a/core/psa_crypto.c
 +++ b/core/psa_crypto.c
 @@ -72,6 +72,10 @@
@@ -46,7 +46,7 @@ index 2d3b07ea2..de131f58d 100644
          *p_slot = NULL;
          return PSA_ERROR_NOT_SUPPORTED;
 diff --git a/core/psa_crypto_driver_wrappers.h b/core/psa_crypto_driver_wrappers.h
-index 3e1dddc2a..252e2c8fc 100644
+index 3e1dddc..252e2c8 100644
 --- a/core/psa_crypto_driver_wrappers.h
 +++ b/core/psa_crypto_driver_wrappers.h
 @@ -42,16 +42,32 @@
@@ -340,7 +340,7 @@ index 3e1dddc2a..252e2c8fc 100644
               * cycle through all known transparent accelerators */
              status = PSA_ERROR_NOT_SUPPORTED;
 diff --git a/core/psa_crypto_driver_wrappers_no_static.c b/core/psa_crypto_driver_wrappers_no_static.c
-index f8eff253f..ba4c2e4e4 100644
+index f8eff25..ba4c2e4 100644
 --- a/core/psa_crypto_driver_wrappers_no_static.c
 +++ b/core/psa_crypto_driver_wrappers_no_static.c
 @@ -41,16 +41,32 @@
@@ -418,5 +418,5 @@ index f8eff253f..ba4c2e4e4 100644
  #endif /* PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT */
          default:
 -- 
-2.34.1
+2.43.0
 

@@ -1,7 +1,7 @@
-From 8da0f131bbb020872ccdb8274416dc028d21e1de Mon Sep 17 00:00:00 2001
+From eb5d1b71023fa7242829dfc719b34dde73e3cab6 Mon Sep 17 00:00:00 2001
 From: David Vincze <david.vincze@arm.com>
-Date: Mon, 20 Oct 2025 15:40:49 +0000
-Subject: [PATCH 12/13] Exclude context definitions for PSA Crypto client
+Date: Thu, 5 Mar 2026 13:57:19 +0000
+Subject: [PATCH 12/14] Exclude context definitions for PSA Crypto client
 
 Signed-off-by: David Vincze <david.vincze@arm.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: David Vincze <david.vincze@arm.com>
  1 file changed, 6 insertions(+)
 
 diff --git a/include/psa/crypto_struct.h b/include/psa/crypto_struct.h
-index 0cc32e7f8..1eab37501 100644
+index 0cc32e7..1eab375 100644
 --- a/include/psa/crypto_struct.h
 +++ b/include/psa/crypto_struct.h
 @@ -56,9 +56,11 @@ extern "C" {
@@ -49,5 +49,5 @@ index 0cc32e7f8..1eab37501 100644
  struct psa_key_derivation_s {
  #if defined(MBEDTLS_PSA_CRYPTO_CLIENT) && !defined(MBEDTLS_PSA_CRYPTO_C)
 -- 
-2.34.1
+2.43.0
 

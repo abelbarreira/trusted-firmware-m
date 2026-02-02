@@ -1,7 +1,7 @@
-From b3cdb2a480969e34f9be09cee0152531136725b7 Mon Sep 17 00:00:00 2001
+From 943dbe54c08cb0965198366da4bde4c4c04e91cc Mon Sep 17 00:00:00 2001
 From: David Vincze <david.vincze@arm.com>
-Date: Fri, 12 Dec 2025 13:35:36 +0000
-Subject: [PATCH 01/13] Add generated files to the source tree
+Date: Thu, 5 Mar 2026 13:57:18 +0000
+Subject: [PATCH 01/14] Add generated files to the source tree
 
 Generated files are now automatically created when invoking CMake.
 However, not all components of TF-M use CMake to consume TF-PSA-Crypto
@@ -22,7 +22,7 @@ also rely on the presence of these files in the source tree.
 
 diff --git a/core/psa_crypto_driver_wrappers.h b/core/psa_crypto_driver_wrappers.h
 new file mode 100644
-index 000000000..3e1dddc2a
+index 0000000..3e1dddc
 --- /dev/null
 +++ b/core/psa_crypto_driver_wrappers.h
 @@ -0,0 +1,2753 @@
@@ -2781,7 +2781,7 @@ index 000000000..3e1dddc2a
 +#endif /* MBEDTLS_PSA_CRYPTO_C */
 diff --git a/core/psa_crypto_driver_wrappers_no_static.c b/core/psa_crypto_driver_wrappers_no_static.c
 new file mode 100644
-index 000000000..f8eff253f
+index 0000000..f8eff25
 --- /dev/null
 +++ b/core/psa_crypto_driver_wrappers_no_static.c
 @@ -0,0 +1,226 @@
@@ -3013,7 +3013,7 @@ index 000000000..f8eff253f
 +#endif /* MBEDTLS_PSA_CRYPTO_C */
 diff --git a/core/tf_psa_crypto_config_check_before.h b/core/tf_psa_crypto_config_check_before.h
 new file mode 100644
-index 000000000..cdf68fac5
+index 0000000..cdf68fa
 --- /dev/null
 +++ b/core/tf_psa_crypto_config_check_before.h
 @@ -0,0 +1,12 @@
@@ -3031,7 +3031,7 @@ index 000000000..cdf68fac5
 +/* End of automatically generated tf_psa_crypto_config_check_before.h */
 diff --git a/core/tf_psa_crypto_config_check_final.h b/core/tf_psa_crypto_config_check_final.h
 new file mode 100644
-index 000000000..2fe4855d9
+index 0000000..2fe4855
 --- /dev/null
 +++ b/core/tf_psa_crypto_config_check_final.h
 @@ -0,0 +1,12 @@
@@ -3049,7 +3049,7 @@ index 000000000..2fe4855d9
 +/* End of automatically generated tf_psa_crypto_config_check_final.h */
 diff --git a/core/tf_psa_crypto_config_check_user.h b/core/tf_psa_crypto_config_check_user.h
 new file mode 100644
-index 000000000..3d7d75b6a
+index 0000000..3d7d75b
 --- /dev/null
 +++ b/core/tf_psa_crypto_config_check_user.h
 @@ -0,0 +1,492 @@
@@ -3546,5 +3546,5 @@ index 000000000..3d7d75b6a
 +
 +/* End of automatically generated tf_psa_crypto_config_check_user.h */
 -- 
-2.34.1
+2.43.0
 

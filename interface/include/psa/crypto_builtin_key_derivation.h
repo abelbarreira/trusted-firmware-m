@@ -125,13 +125,13 @@ typedef struct {
 #define SP800_108_INTERATION_COUNTER_SIZE   4
 
 #ifndef SP800_108_LABEL_MAX_SIZE
-#define SP800_108_LABEL_MAX_SIZE            48
+#define SP800_108_LABEL_MAX_SIZE            50
 #endif
 
 #define SP800_108_NULL_BYTE_SIZE            1
 
 #ifndef SP800_108_CONTEXT_MAX_SIZE
-#define SP800_108_CONTEXT_MAX_SIZE          48
+#define SP800_108_CONTEXT_MAX_SIZE          50
 #endif
 
 #define SP800_108_K0_MAX_SIZE               PSA_MAC_MAX_SIZE

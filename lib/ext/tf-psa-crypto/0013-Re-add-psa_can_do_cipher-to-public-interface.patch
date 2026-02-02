@@ -1,7 +1,7 @@
-From d16a85111c4661ff3dad76086cd38dfb7fb1c2c3 Mon Sep 17 00:00:00 2001
+From b47def1e10119e3b4eddae70b980c88e2d28fb1f Mon Sep 17 00:00:00 2001
 From: David Vincze <david.vincze@arm.com>
-Date: Wed, 5 Nov 2025 16:01:24 +0000
-Subject: [PATCH 13/13] Re-add psa_can_do_cipher() to public interface
+Date: Thu, 5 Mar 2026 13:57:19 +0000
+Subject: [PATCH 13/14] Re-add psa_can_do_cipher() to public interface
 
 Its prototype was removed from the public interface by 327c9c0.
 TF-M keeps using this function - add again to avoid build errors.
@@ -12,7 +12,7 @@ Signed-off-by: David Vincze <david.vincze@arm.com>
  1 file changed, 11 insertions(+)
 
 diff --git a/include/psa/crypto_compat.h b/include/psa/crypto_compat.h
-index 881516b8d..084e8931a 100644
+index 881516b..084e893 100644
 --- a/include/psa/crypto_compat.h
 +++ b/include/psa/crypto_compat.h
 @@ -36,6 +36,17 @@ extern "C" {
@@ -34,5 +34,5 @@ index 881516b8d..084e8931a 100644
   * tests. Without it building the tests will fail. To remove it we would
   * need to change the tests to remove all references to this symbol.
 -- 
-2.34.1
+2.43.0
 
