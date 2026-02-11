@@ -49,6 +49,40 @@ psa_status_t gpt_entry_read(const struct efi_guid_t  *guid,
                             struct partition_entry_t *partition_entry);
 
 /**
+ * \brief Reads the contents of a partition entry identified by name.
+ *
+ * \param[in]  name Name of the partition to read in unicode.
+ * \param[in]  index Index to read when multiple entries share the same name.
+ * \param[out] partition_entry Populated partition entry on success.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_DOES_NOT_EXIST No entry found with the provided name at \p index. For example,
+ *                                  \p index was 1 (second entry) but only one entry was found.
+ */
+__attribute__((nonnull(1,3)))
+psa_status_t gpt_entry_read_by_name(const char                name[GPT_ENTRY_NAME_LENGTH],
+                                    const uint32_t            index,
+                                    struct partition_entry_t *partition_entry);
+
+/**
+ * \brief Reads the contents of a partition entry identified by type.
+ *
+ * \param[in]  type Type of the partition to read.
+ * \param[in]  index Index to read when multiple entries share the same type.
+ * \param[out] partition_entry Populated partition entry on success.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_DOES_NOT_EXIST No entry found with the provided type at \p index. For example,
+ *                                  \p index was 1 (second entry) but only one entry was found.
+ */
+__attribute__((nonnull(1,3)))
+psa_status_t gpt_entry_read_by_type(const struct efi_guid_t  *type,
+                                    const uint32_t            index,
+                                    struct partition_entry_t *partition_entry);
+
+/**
  * \brief Reads the GPT header from the second block (LBA 1).
  *
  * \param[in] flash_driver Driver used to perform I/O.

@@ -177,6 +177,8 @@ static inline uint64_t partition_entry_lba(const struct gpt_t *table,
 static inline uint64_t gpt_entry_per_lba_count(void);
 static psa_status_t count_used_partitions(const struct gpt_t *table,
                                           uint32_t *num_used);
+static inline void parse_entry(struct gpt_entry_t       *entry,
+                               struct partition_entry_t *partition_entry);
 static psa_status_t read_from_flash(uint64_t required_lba);
 static psa_status_t read_entry_from_flash(const struct gpt_t *table,
                                           uint32_t array_index,
@@ -190,6 +192,8 @@ static psa_status_t find_gpt_entry(const struct gpt_t      *table,
                                    uint32_t                *array_index);
 static psa_status_t mbr_load(struct mbr_t *mbr);
 static bool gpt_entry_cmp_guid(const struct gpt_entry_t *entry, const void *guid);
+static bool gpt_entry_cmp_name(const struct gpt_entry_t *entry, const void *name);
+static bool gpt_entry_cmp_type(const struct gpt_entry_t *entry, const void *type);
 
 /* PUBLIC API FUNCTIONS */
 
@@ -202,12 +206,37 @@ psa_status_t gpt_entry_read(const struct efi_guid_t  *guid,
         return ret;
     }
 
-    partition_entry->start = cached_entry.start;
-    partition_entry->size = cached_entry.end - cached_entry.start + 1;
-    memcpy(partition_entry->name, cached_entry.name, GPT_ENTRY_NAME_LENGTH);
-    partition_entry->attr = cached_entry.attr;
-    partition_entry->partition_guid = cached_entry.unique_guid;
-    partition_entry->type_guid = cached_entry.partition_type;
+    parse_entry(&cached_entry, partition_entry);
+
+    return PSA_SUCCESS;
+}
+
+psa_status_t gpt_entry_read_by_name(const char                name[GPT_ENTRY_NAME_LENGTH],
+                                    const uint32_t            index,
+                                    struct partition_entry_t *partition_entry)
+{
+    struct gpt_entry_t cached_entry;
+    const psa_status_t ret = find_gpt_entry(&primary_gpt, gpt_entry_cmp_name, name, index, &cached_entry, NULL);
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+
+    parse_entry(&cached_entry, partition_entry);
+
+    return PSA_SUCCESS;
+}
+
+psa_status_t gpt_entry_read_by_type(const struct efi_guid_t  *type,
+                                    const uint32_t            index,
+                                    struct partition_entry_t *partition_entry)
+{
+    struct gpt_entry_t cached_entry;
+    const psa_status_t ret = find_gpt_entry(&primary_gpt, gpt_entry_cmp_type, type, index, &cached_entry, NULL);
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+
+    parse_entry(&cached_entry, partition_entry);
 
     return PSA_SUCCESS;
 }
@@ -322,6 +351,18 @@ static inline uint64_t gpt_entry_per_lba_count(void)
     return num_entries;
 }
 
+/* Copies information from the entry to the user visible structure */
+static inline void parse_entry(struct gpt_entry_t       *entry,
+                               struct partition_entry_t *partition_entry)
+{
+    partition_entry->start = entry->start;
+    partition_entry->size = entry->end - entry->start + 1;
+    memcpy(partition_entry->name, entry->name, GPT_ENTRY_NAME_LENGTH);
+    partition_entry->attr = entry->attr;
+    partition_entry->partition_guid = entry->unique_guid;
+    partition_entry->type_guid = entry->partition_type;
+}
+
 /* Compare the entry with the given guid */
 static bool gpt_entry_cmp_guid(const struct gpt_entry_t *entry, const void *guid)
 {
@@ -329,6 +370,21 @@ static bool gpt_entry_cmp_guid(const struct gpt_entry_t *entry, const void *guid
     const struct efi_guid_t entry_guid = entry->unique_guid;
 
     return efi_guid_cmp(&entry_guid, cmp_guid) == 0;
+}
+
+/* Compare the entry with the given name */
+static bool gpt_entry_cmp_name(const struct gpt_entry_t *entry, const void *name)
+{
+    return memcmp(name, entry->name, GPT_ENTRY_NAME_LENGTH) == 0;
+}
+
+/* Compare the entry with the given type */
+static bool gpt_entry_cmp_type(const struct gpt_entry_t *entry, const void *type)
+{
+    const struct efi_guid_t *cmp_type = (const struct efi_guid_t *)type;
+    const struct efi_guid_t entry_type = entry->partition_type;
+
+    return efi_guid_cmp(&entry_type, cmp_type) == 0;
 }
 
 /* Read entry with given GUID from given table and return it if found. */

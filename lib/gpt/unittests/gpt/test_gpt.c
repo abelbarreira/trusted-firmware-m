@@ -381,3 +381,130 @@ void test_gpt_entry_read_should_failWhenEntryNotExisting(void)
     register_mocked_read(&test_partition_array, sizeof(test_partition_array));
     TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_read(&non_existing, &entry));
 }
+
+void test_gpt_entry_read_by_name_should_populateEntry(void)
+{
+    /* Start with a populated GPT */
+    setup_valid_gpt();
+
+    /* Ensure an entry is found, even with repeat names */
+    struct partition_entry_t entry;
+    struct gpt_entry_t *desired1 = &(test_partition_array[0]);
+    struct efi_guid_t test_guid1 = desired1->guid;
+    struct efi_guid_t test_type1 = desired1->type;
+
+    /* Change the name of something else and ensure it is found */
+    struct gpt_entry_t *desired2 = &(test_partition_array[1]);
+    struct efi_guid_t test_guid2 = desired2->guid;
+    struct efi_guid_t test_type2 = desired2->type;
+    memcpy(desired2->name, desired1->name, GPT_ENTRY_NAME_LENGTH);
+
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_entry_read_by_name(desired1->name, 0, &entry));
+
+    /* Ensure this is the correct entry */
+    TEST_ASSERT_EQUAL(0, efi_guid_cmp(&test_guid1, &(entry.partition_guid)));
+    TEST_ASSERT_EQUAL(0, efi_guid_cmp(&test_type1, &(entry.type_guid)));
+    TEST_ASSERT_EQUAL(desired1->start, entry.start);
+    TEST_ASSERT_EQUAL(desired1->end, entry.start + entry.size - 1);
+
+    TEST_ASSERT_EQUAL_MEMORY(desired1->name, entry.name, GPT_ENTRY_NAME_LENGTH);
+
+    /* Do again but the next entry */
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_entry_read_by_name(desired1->name, 1, &entry));
+
+    /* Ensure this is the correct entry */
+    TEST_ASSERT_EQUAL(0, efi_guid_cmp(&test_guid2, &(entry.partition_guid)));
+    TEST_ASSERT_EQUAL(0, efi_guid_cmp(&test_type2, &(entry.type_guid)));
+    TEST_ASSERT_EQUAL(desired2->start, entry.start);
+    TEST_ASSERT_EQUAL(desired2->end, entry.start + entry.size - 1);
+
+    TEST_ASSERT_EQUAL_MEMORY(desired2->name, entry.name, GPT_ENTRY_NAME_LENGTH);
+}
+
+void test_gpt_entry_read_by_name_should_failWhenEntryNotExisting(void)
+{
+    /* Start with an empty GPT */
+    setup_empty_gpt();
+
+    /* Try to read something */
+    struct partition_entry_t entry;
+    char test_name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_read_by_name(test_name, 0, &entry));
+
+    /* Now, have a non-empty GPT but search for a name that won't exist */
+    setup_valid_gpt();
+
+    /* Each entry should be read */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_read_by_name(test_name, 0, &entry));
+
+    /* Finally, search for the second entry of a name that appears only once */
+    memcpy(test_name, test_partition_array[0].name, GPT_ENTRY_NAME_LENGTH);
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_read_by_name(test_name, 1, &entry));
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_read_by_name(test_name, TEST_DEFAULT_NUM_PARTITIONS, &entry));
+}
+
+void test_gpt_entry_read_by_type_should_populateEntry(void)
+{
+    /* Start with a populated GPT */
+    setup_valid_gpt();
+
+    /* Ensure an entry is found, even with repeat types */
+    struct partition_entry_t entry;
+    struct gpt_entry_t *desired1 = &(test_partition_array[0]);
+    struct efi_guid_t test_guid1 = desired1->guid;
+    struct efi_guid_t test_type1 = desired1->type;
+
+    struct gpt_entry_t *desired2 = &(test_partition_array[1]);
+    struct efi_guid_t test_guid2 = desired2->guid;
+    struct efi_guid_t test_type2 = test_type1;
+    desired2->type = test_type2;
+
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_entry_read_by_type(&test_type1, 0, &entry));
+
+    /* Ensure this is the correct entry */
+    TEST_ASSERT_EQUAL(0, efi_guid_cmp(&test_guid1, &(entry.partition_guid)));
+    TEST_ASSERT_EQUAL(0, efi_guid_cmp(&test_type1, &(entry.type_guid)));
+    TEST_ASSERT_EQUAL(desired1->start, entry.start);
+    TEST_ASSERT_EQUAL(desired1->end, entry.start + entry.size - 1);
+
+    /* Name is unicode */
+    TEST_ASSERT_EQUAL_MEMORY(desired1->name, entry.name, GPT_ENTRY_NAME_LENGTH);
+
+    /* Do again but the next entry */
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_entry_read_by_type(&test_type1, 1, &entry));
+
+    /* Ensure this is the correct entry */
+    TEST_ASSERT_EQUAL(0, efi_guid_cmp(&test_guid2, &(entry.partition_guid)));
+    TEST_ASSERT_EQUAL(0, efi_guid_cmp(&test_type2, &(entry.type_guid)));
+    TEST_ASSERT_EQUAL(desired2->start, entry.start);
+    TEST_ASSERT_EQUAL(desired2->end, entry.start + entry.size - 1);
+
+    TEST_ASSERT_EQUAL_MEMORY(desired2->name, entry.name, GPT_ENTRY_NAME_LENGTH);
+}
+
+void test_gpt_entry_read_by_type_should_failWhenEntryNotExisting(void)
+{
+    /* Start with an empty GPT */
+    setup_empty_gpt();
+
+    /* Try to read something */
+    struct partition_entry_t entry;
+    struct efi_guid_t test_type = MAKE_EFI_GUID(11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1);
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_read_by_type(&test_type, 0, &entry));
+
+    /* Now, have a non-empty GPT but search for a type that won't exist */
+    setup_valid_gpt();
+
+    /* Each entry should be read */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_read_by_type(&test_type, 0, &entry));
+
+    /* Finally, search for the second entry of a type that appears only once */
+    struct efi_guid_t existing_type = test_partition_array[0].type;
+    efi_guid_cpy(&existing_type, &test_type);
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_read_by_type(&test_type, 1, &entry));
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_read_by_type(&test_type, TEST_DEFAULT_NUM_PARTITIONS, &entry));
+}
