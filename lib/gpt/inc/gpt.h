@@ -83,6 +83,75 @@ psa_status_t gpt_entry_read_by_type(const struct efi_guid_t  *type,
                                     struct partition_entry_t *partition_entry);
 
 /**
+ * \brief Renames a partition entry.
+ *
+ * \param[in] guid Entry to rename.
+ * \param[in] name New unicode name for the entry.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_DOES_NOT_EXIST No entry found with the provided GUID.
+ * \retval PSA_ERROR_INVALID_ARGUMENT Empty name.
+ */
+__attribute__((nonnull(1,2)))
+psa_status_t gpt_entry_rename(const struct efi_guid_t *guid,
+                              const char name[GPT_ENTRY_NAME_LENGTH]);
+
+/**
+ * \brief Changes the type of a partition.
+ *
+ * \param[in] guid Entry to update.
+ * \param[in] type New type GUID.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_INVALID_ARGUMENT \p type is the null GUID.
+ * \retval PSA_ERROR_DOES_NOT_EXIST No entry found with the provided GUID.
+ */
+__attribute__((nonnull(1,2)))
+psa_status_t gpt_entry_change_type(const struct efi_guid_t *guid,
+                                   const struct efi_guid_t *type);
+
+/**
+ * \brief Adds attributes to a partition entry.
+ *
+ * \param[in] guid Entry to modify.
+ * \param[in] attr Attributes to add.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_DOES_NOT_EXIST No entry found with the provided GUID.
+ */
+__attribute__((nonnull(1)))
+psa_status_t gpt_attr_add(const struct efi_guid_t *guid, const uint64_t attr);
+
+/**
+ * \brief Removes attributes from a partition entry.
+ *
+ * \param[in] guid Entry to modify.
+ * \param[in] attr Attributes to remove.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_DOES_NOT_EXIST No entry found with the provided GUID.
+ */
+__attribute__((nonnull(1)))
+psa_status_t gpt_attr_remove(const struct efi_guid_t *guid, const uint64_t attr);
+
+/**
+ * \brief Sets attributes for a partition entry.
+ *
+ * \param[in] guid Entry to modify.
+ * \param[in] attr Attributes to set.
+ *
+ * \retval PSA_SUCCESS Success.
+ * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_DOES_NOT_EXIST No entry found with the provided GUID.
+ */
+__attribute__((nonnull(1)))
+psa_status_t gpt_attr_set(const struct efi_guid_t *guid, const uint64_t attr);
+
+/**
  * \brief Reads the GPT header from the second block (LBA 1).
  *
  * \param[in] flash_driver Driver used to perform I/O.

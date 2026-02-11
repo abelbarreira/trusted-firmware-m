@@ -37,4 +37,5 @@ target_link_libraries(tfm_gpt
         tfm_log_headers
     PRIVATE
         tfm_efi_guid
+        tfm_efi_soft_crc
 )

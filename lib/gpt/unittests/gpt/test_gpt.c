@@ -10,6 +10,7 @@
 
 #include "unity.h"
 
+#include "mock_efi_soft_crc.h"
 #include "mock_tfm_log.h"
 #include "mock_tfm_vprintf.h"
 
@@ -133,12 +134,16 @@ struct gpt_header_t {
 
 static void register_mocked_read(void *buf, size_t num_bytes);
 static ssize_t test_driver_read(uint64_t lba, void *buf);
+static ssize_t test_driver_write(uint64_t lba, const void *buf);
+static ssize_t test_driver_erase(uint64_t lba, size_t num_blocks);
 
 /* LBA driver used in test module */
 static struct gpt_flash_driver_t mock_driver = {
     .init = NULL,
     .uninit = NULL,
     .read = test_driver_read,
+    .write = test_driver_write,
+    .erase = test_driver_erase,
 };
 
 /* Valid MBR. Only signature is required to be valid */
@@ -227,6 +232,17 @@ static ssize_t test_driver_read(uint64_t lba, void *buf)
     return TEST_BLOCK_SIZE;
 }
 
+/* Driver function that always succeeds in writing all data */
+static ssize_t test_driver_write(uint64_t lba, const void *buf)
+{
+    return TEST_BLOCK_SIZE;
+}
+
+static ssize_t test_driver_erase(uint64_t lba, size_t num_blocks)
+{
+    return num_blocks;
+}
+
 /* Creates backup table from test table and registers a read for it */
 static void setup_backup_gpt(void)
 {
@@ -285,6 +301,9 @@ void setUp(void)
 
     test_mbr.partitions[0].os_type = TEST_MBR_TYPE_GPT;
 
+    /* Any time this is called, return the same number and ignore the arguments */
+    efi_soft_crc32_update_IgnoreAndReturn(test_header.header_crc);
+
     /* Ignore all logging calls */
     tfm_log_Ignore();
 
@@ -337,6 +356,174 @@ void test_gpt_init_should_failWhenFlashDriverNotFullyDefined(void)
     mock_driver.read = NULL;
     TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_init(&mock_driver, TEST_MAX_PARTITIONS));
     mock_driver.read = read_fn;
+
+    gpt_flash_write_t write_fn = mock_driver.write;
+    mock_driver.write = NULL;
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_init(&mock_driver, TEST_MAX_PARTITIONS));
+    mock_driver.write = write_fn;
+
+    gpt_flash_erase_t erase_fn = mock_driver.erase;
+    mock_driver.erase = NULL;
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_init(&mock_driver, TEST_MAX_PARTITIONS));
+    mock_driver.erase = erase_fn;
+}
+
+void test_gpt_attr_set_should_setAttributes(void)
+{
+    /* Start with a populated GPT */
+    setup_valid_gpt();
+
+    /* Entries are read */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t guid = test_partition_array[0].guid;
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_attr_set(&guid, 0x1));
+}
+
+void test_gpt_attr_set_should_failWhenEntryNotExisting(void)
+{
+    setup_valid_gpt();
+
+    /* Read every entry */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t non_existing = NULL_GUID;
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_attr_set(&non_existing, 0x1));
+}
+
+void test_gpt_attr_remove_should_removeAttributes(void)
+{
+    /* Start with a populated GPT */
+    struct gpt_entry_t *test_entry = &(test_partition_array[0]);
+    uint64_t test_attr = 0x1;
+    test_entry->attr = test_attr;
+    setup_valid_gpt();
+
+    /* First entry is read */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t test_guid = test_entry->guid;
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_attr_set(&test_guid, test_attr));
+}
+
+void test_gpt_attr_remove_should_failWhenEntryNotExisting(void)
+{
+    setup_valid_gpt();
+
+    /* Read every entry */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t non_existing = NULL_GUID;
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_attr_remove(&non_existing, 0x1));
+}
+
+void test_gpt_attr_add_should_addAttributes(void)
+{
+    /* Start with a populated GPT */
+    struct gpt_entry_t *test_entry = &(test_partition_array[0]);
+    setup_valid_gpt();
+
+    /* First entry is read */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t test_guid = test_entry->guid;
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_attr_add(&test_guid, 0x1));
+}
+
+void test_gpt_attr_add_should_failWhenEntryNotExisting(void)
+{
+    setup_valid_gpt();
+
+    /* Read every entry */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t non_existing = NULL_GUID;
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_attr_add(&non_existing, 0x1));
+}
+
+void test_gpt_entry_change_type_should_setNewType(void)
+{
+    /* Start with a populated GPT */
+    struct gpt_entry_t *test_entry = &(test_partition_array[0]);
+    setup_valid_gpt();
+
+    /* First entry is read */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t test_guid = test_entry->guid;
+
+    /* Type validation is not a function of the library, as this is OS
+     * dependent, so anything will do here.
+     */
+    struct efi_guid_t new_type = MAKE_EFI_GUID(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_entry_change_type(&test_guid, &new_type));
+}
+
+void test_gpt_entry_change_type_should_failWhenEntryNotExisting(void)
+{
+    setup_valid_gpt();
+
+    /* Read every entry */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t non_existing = NULL_GUID;
+    struct efi_guid_t new_type = MAKE_EFI_GUID(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_change_type(&non_existing, &new_type));
+}
+
+void test_gpt_entry_change_type_should_failWhenSettingTypeToNullGuid(void)
+{
+    setup_valid_gpt();
+
+    struct gpt_entry_t *test_entry = &(test_partition_array[0]);
+
+    /* First entry is read */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t test_guid = test_entry->guid;
+    struct efi_guid_t new_type = NULL_GUID;
+
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_change_type(&test_guid, &new_type));
+}
+
+void test_gpt_entry_rename_should_renameEntry(void)
+{
+    /* Start with a populated GPT */
+    struct gpt_entry_t *test_entry = &(test_partition_array[0]);
+    setup_valid_gpt();
+
+    /* First entry is read */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    char new_name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    new_name[0] = 'a';
+    struct efi_guid_t test_guid = test_entry->guid;
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_entry_rename(&test_guid, new_name));
+}
+
+void test_gpt_entry_rename_should_failWhenNameIsEmpty(void)
+{
+    /* Start with a populated GPT */
+    struct gpt_entry_t *test_entry = &(test_partition_array[0]);
+    setup_valid_gpt();
+
+    /* Try to change name to an empty string */
+    struct efi_guid_t test_guid = test_entry->guid;
+    char name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_ARGUMENT, gpt_entry_rename(&test_guid, name));
+}
+
+void test_gpt_entry_rename_should_failWhenEntryNotExisting(void)
+{
+    setup_valid_gpt();
+
+    /* Read every entry */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    struct efi_guid_t non_existing = NULL_GUID;
+    char new_name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    new_name[0] = 'a';
+    TEST_ASSERT_EQUAL(PSA_ERROR_DOES_NOT_EXIST, gpt_entry_rename(&non_existing, new_name));
 }
 
 void test_gpt_entry_read_should_populateEntry(void)
