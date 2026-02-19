@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
+ * Copyright (c) 2023-2026 Cypress Semiconductor Corporation (an Infineon company)
  * or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -11,12 +11,13 @@
 #include "current.h"
 #include "cy_device_headers.h"
 #include "ifx_fih.h"
-#include "platform_svc_api.h"
+#include "platform_svc_private.h"
 #include "spm.h"
 #include "coverity_check.h"
 #include "target_cfg.h"
 #include "tfm_hal_isolation.h"
 #include "tfm_peripherals_def.h"
+#include "coverity_check.h"
 #if IFX_UART_ENABLED
 #include "uart_pdl_stdout.h"
 #endif

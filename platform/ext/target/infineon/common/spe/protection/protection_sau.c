@@ -15,7 +15,6 @@
 #include "protection_regions_cfg.h"
 #include "coverity_check.h"
 #include "region.h"
-#include "utilities.h"
 
 #if CONFIG_TFM_USE_TRUSTZONE
 /* Number of additional SAU regions for Veneer regions */
@@ -70,6 +69,7 @@ FIH_RET_TYPE(enum tfm_hal_status_t) ifx_sau_cfg(void)
         SAU->RLAR = ((SAU_config[idx].base_addr + SAU_config[idx].size - 1U)
                      & SAU_RLAR_LADDR_Msk)
                      | _VAL2FLD(SAU_RLAR_ENABLE, 1);
+        TFM_COVERITY_BLOCK_END(cert_int36_c)
     }
 
 #if CONFIG_TFM_USE_TRUSTZONE

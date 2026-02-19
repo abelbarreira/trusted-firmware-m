@@ -10,6 +10,7 @@
 #include "ifx_utils.h"
 #include "tfm_crypto_defs.h"
 #include "tfm_plat_ps_crypto.h"
+#include "coverity_check.h"
 
 static const uint8_t ps_key_seed[PS_KEY_LEN_BYTES] = {0};
 

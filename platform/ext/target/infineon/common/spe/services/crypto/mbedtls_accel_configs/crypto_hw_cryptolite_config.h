@@ -51,7 +51,16 @@
 #if defined(PSA_WANT_ALG_HKDF) && (PSA_WANT_ALG_HKDF == 1)
 //#define MBEDTLS_PSA_ACCEL_ALG_HKDF (not supported)
 #endif
-#if defined(PSA_WANT_ALG_HMAC) && (PSA_WANT_ALG_HMAC == 1)
+/* Cryptolite HMAC implementation is SHA-256 only.
+ * Do not advertise generic HMAC acceleration when other hash algorithms
+ * are requested, otherwise Mbed TLS disables software builtin HMAC fallback
+ * and HMAC-SHA224/384/512 paths fail.
+ */
+#if defined(PSA_WANT_ALG_HMAC) && (PSA_WANT_ALG_HMAC == 1) && \
+	defined(PSA_WANT_ALG_SHA_256) && (PSA_WANT_ALG_SHA_256 == 1) && \
+	(!defined(PSA_WANT_ALG_SHA_224) || (PSA_WANT_ALG_SHA_224 != 1)) && \
+	(!defined(PSA_WANT_ALG_SHA_384) || (PSA_WANT_ALG_SHA_384 != 1)) && \
+	(!defined(PSA_WANT_ALG_SHA_512) || (PSA_WANT_ALG_SHA_512 != 1))
 #define MBEDTLS_PSA_ACCEL_ALG_HMAC
 #endif
 #if defined(PSA_WANT_ALG_MD5) && (PSA_WANT_ALG_MD5 == 1)
@@ -125,8 +134,25 @@
 #if defined(PSA_WANT_ECC_MONTGOMERY_448) && (PSA_WANT_ECC_MONTGOMERY_448 == 1)
 //#define MBEDTLS_PSA_ACCEL_ECC_MONTGOMERY_448 (not supported)
 #endif
+#if defined(PSA_WANT_ECC_SECP_K1_192) && (PSA_WANT_ECC_SECP_K1_192 == 1)
+//#define MBEDTLS_PSA_ACCEL_ECC_SECP_K1_192 (not supported)
+#endif
+/*
+ * SECP224K1 is buggy via the PSA API in Mbed TLS
+ * (https://github.com/Mbed-TLS/mbedtls/issues/3541). Thus, do not enable it by
+ * default.
+ */
+#if defined(PSA_WANT_ECC_SECP_K1_224) && (PSA_WANT_ECC_SECP_K1_224 == 1)
+//#define MBEDTLS_PSA_ACCEL_ECC_SECP_K1_224 (not supported)
+#endif
 #if defined(PSA_WANT_ECC_SECP_K1_256) && (PSA_WANT_ECC_SECP_K1_256 == 1)
 //#define MBEDTLS_PSA_ACCEL_ECC_SECP_K1_256 (not supported)
+#endif
+#if defined(PSA_WANT_ECC_SECP_R1_192) && (PSA_WANT_ECC_SECP_R1_192 == 1)
+#define MBEDTLS_PSA_ACCEL_ECC_SECP_R1_192
+#endif
+#if defined(PSA_WANT_ECC_SECP_R1_224) && (PSA_WANT_ECC_SECP_R1_224 == 1)
+#define MBEDTLS_PSA_ACCEL_ECC_SECP_R1_224
 #endif
 #if defined(PSA_WANT_ECC_SECP_R1_256) && (PSA_WANT_ECC_SECP_R1_256 == 1)
 #define MBEDTLS_PSA_ACCEL_ECC_SECP_R1_256

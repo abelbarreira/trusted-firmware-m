@@ -15,7 +15,6 @@
 #include "protection_mpu.h"
 #include "protection_utils.h"
 #include "region.h"
-#include "utilities.h"
 #include "coverity_check.h"
 
 #if CONFIG_TFM_PARTITION_META_DYNAMIC_ISOLATION == 1
