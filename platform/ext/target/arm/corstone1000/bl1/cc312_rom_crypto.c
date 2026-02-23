@@ -5,6 +5,12 @@
  *
  */
 
+/* BL1 crypto layer still calls mbedtls functions directly which are now
+ * considered a private interface of TF-PSA-Crypto. For now, we need to expose
+ * these private identifiers to avoid build errors.
+ */
+#define MBEDTLS_ALLOW_PRIVATE_ACCESS
+
 #include "bl1_crypto.h"
 
 #include <stdint.h>

@@ -114,7 +114,7 @@ target_compile_definitions(${CC312_LIB_TARGET}
     PRIVATE
         # The driver needs to access private identifiers from TF-PSA-Crypto,
         # which were previously exposed in Mbed TLS.
-        MBEDTLS_DECLARE_PRIVATE_IDENTIFIERS
+        MBEDTLS_ALLOW_PRIVATE_ACCESS
 )
 
 ########################## CDMPU ###############################################

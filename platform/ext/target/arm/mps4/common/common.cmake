@@ -362,10 +362,6 @@ target_sources(bl1_1_psa_crypto
         $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_cipher.c>
 )
 
-# Fixme: BL1 crypto layer will need to be be re-implemented using PSA Crypto API only.
-# For now, we need to expose the private identifiers to MPS4 BL1 code to avoid build errors.
-target_compile_definitions(bl1_1_psa_crypto PRIVATE MBEDTLS_DECLARE_PRIVATE_IDENTIFIERS)
-
 #========================= Platform BL1_2 =====================================#
 
 target_add_scatter_file(bl1_2

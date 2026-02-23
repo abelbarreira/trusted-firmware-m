@@ -219,11 +219,6 @@ target_compile_definitions(platform_bl1_1
         # can be used if the BL1 target needs different implementation than
         # the TFM_S target.
         BL1_BUILD
-    PRIVATE
-        # c312_rom_crypto.c refers to private identifiers from drivers/builtin/src/sha512.c
-        # Fixme: BL1 crypto layer will need to be be re-implemented using the PSA Crypto API only.
-        #        For now, we need to expose the private identifiers to BL1 code to avoid build errors.
-        MBEDTLS_DECLARE_PRIVATE_IDENTIFIERS
 )
 
 target_include_directories(platform_bl1_1_interface
