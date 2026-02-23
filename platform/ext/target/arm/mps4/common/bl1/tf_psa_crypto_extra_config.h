@@ -24,6 +24,10 @@ extern "C" {
 #define MBEDTLS_HMAC_DRBG_C
 #define MBEDTLS_MD_C
 
+#undef MBEDTLS_PLATFORM_EXIT_MACRO
+#define MBEDTLS_PLATFORM_EXIT_MACRO(status) \
+    do { (void)(status); while (1) { } } while (0)
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
