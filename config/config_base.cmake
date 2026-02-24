@@ -57,7 +57,7 @@ set(LIB_DTPM_VERSION                    "2adab98"   CACHE STRING    "The version
 set(PLATFORM_PSA_ADAC_SECURE_DEBUG      FALSE       CACHE BOOL      "Whether to use psa-adac secure debug.")
 set(PSA_ADAC_AS_TFM_RUNTIME_SERVICE     OFF         CACHE BOOL      "Integrate ADAC as TF-M runtime service")
 set(PLATFORM_PSA_ADAC_SOURCE_PATH       "DOWNLOAD"  CACHE PATH      "Path to source dir of psa-adac.")
-set(PLATFORM_PSA_ADAC_VERSION           "e501b49"   CACHE STRING    "The version of psa-adac to use.")
+set(PLATFORM_PSA_ADAC_VERSION           "a49436c"   CACHE STRING    "The version of psa-adac to use.")
 set(PLATFORM_RAM_FS                     OFF         CACHE BOOL      "Enables the use of RAM instead of the persistent storage device to store the FS in Secure Storage services")
 
 set(PLATFORM_IS_FVP                     FALSE       CACHE BOOL      "Whether to enable FVP or FPGA build of the platform.")
