@@ -166,7 +166,6 @@ attest_get_initial_attestation_key_id(struct q_useful_buf_c *attest_key_id)
         /* In case the buffer size was not checked, although unlikely */
         if (sizeof(kid_buf) < kid_len) {
             psa_panic();
-            }
         }
 
         if (plat_res != TFM_PLAT_ERR_SUCCESS) {
