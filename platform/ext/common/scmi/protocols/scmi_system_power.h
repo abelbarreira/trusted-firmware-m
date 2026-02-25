@@ -35,20 +35,21 @@ extern "C" {
     (UINT32_C(0x1) << SCMI_SYS_POWER_STATE_FLAGS_GRACEFUL_POS)
 
 /**
- * SCMI system power: power states
+ * SCMI system power: system states (SYSTEM_POWER_STATE_SET)
  */
-#define SCMI_SYS_POWER_STATE_SHUTDOWN   UINT32_C(0)
-#define SCMI_SYS_POWER_STATE_COLD_RESET UINT32_C(1)
-#define SCMI_SYS_POWER_STATE_WARM_RESET UINT32_C(2)
-#define SCMI_SYS_POWER_STATE_POWER_UP   UINT32_C(3)
-#define SCMI_SYS_POWER_STATE_SUSPEND    UINT32_C(4)
+#define SCMI_SYS_POWER_STATE_SET_SHUTDOWN   UINT32_C(0)
+#define SCMI_SYS_POWER_STATE_SET_COLD_RESET UINT32_C(1)
+#define SCMI_SYS_POWER_STATE_SET_WARM_RESET UINT32_C(2)
+#define SCMI_SYS_POWER_STATE_SET_POWER_UP   UINT32_C(3)
+#define SCMI_SYS_POWER_STATE_SET_SUSPEND    UINT32_C(4)
 
 /**
  * SCMI message IDs
  */
-#define SCMI_MESSAGE_ID_SYS_POWER_STATE_SET      UINT8_C(0x3)
-#define SCMI_MESSAGE_ID_SYS_POWER_STATE_NOTIFY   UINT8_C(0x5)
-#define SCMI_MESSAGE_ID_SYS_POWER_STATE_NOTIFIER UINT8_C(0x0)
+#define SCMI_MESSAGE_ID_SYS_POWER_PROTOCOL_VERSION  UINT8_C(0x0)
+#define SCMI_MESSAGE_ID_SYS_POWER_STATE_SET         UINT8_C(0x3)
+#define SCMI_MESSAGE_ID_SYS_POWER_STATE_NOTIFY      UINT8_C(0x5)
+#define SCMI_MESSAGE_ID_SYS_POWER_STATE_NOTIFIER    UINT8_C(0x0)
 
 /**
  * \brief System power state set message payload.
@@ -89,13 +90,36 @@ struct scmi_sys_power_state_notifier_t {
 };
 
 /**
- * \brief System power state notification subscription message request.
+ * \brief Create a SCMI PROTOCOL_VERSION message.
  *
- * \param[in] msg The message to be built.
- *
+ * \param[out] msg  The SCMI message to be built.
+ * \return Error value as defined by scmi_protocol_err_t.
  */
-scmi_protocol_err_t scmi_message_sys_power_state_notify(struct scmi_message_t *msg);
+scmi_protocol_err_t scmi_message_sys_power_protocol_version(
+    struct scmi_message_t *msg);
 
+/**
+ * \brief Create a SCMI SYSTEM_POWER_STATE_SET message.
+ *
+ * \param[out] msg  The SCMI message to be built.
+ * \param[in] flags 0: forceful ; 1: graceful
+ * \param[in] system_state One of the power states SCMI_SYS_POWER_STATE_SET_XYZ
+ * \return Error value as defined by scmi_protocol_err_t.
+ */
+scmi_protocol_err_t scmi_message_sys_power_state_set(
+    struct scmi_message_t *msg,
+    uint32_t flags,
+    uint32_t system_state);
+
+/**
+ * \brief Create a SCMI SYSTEM_POWER_STATE_NOTIFY message to request notifications
+ *      from the platform.
+ *
+ * \param[out] msg  The SCMI message to be built.
+ * \return Error value as defined by scmi_protocol_err_t.
+ */
+scmi_protocol_err_t scmi_message_sys_power_state_notify(
+    struct scmi_message_t *msg);
 
 /**@}*/
 
