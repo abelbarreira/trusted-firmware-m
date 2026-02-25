@@ -176,14 +176,14 @@ static mbedtls_psa_external_random_context_t *g_ctx = NULL;
 
 #if defined(CC3XX_CRYPTO_OPAQUE_KEYS)
 psa_status_t cc3xx_opaque_keys_attr_init(psa_key_attributes_t *attributes,
-                                             psa_key_id_t key_id,
-                                             psa_algorithm_t alg,
-                                             const uint8_t **key_buffer,
-                                             size_t *key_buffer_size)
+                                         psa_key_id_t key_id,
+                                         psa_algorithm_t alg,
+                                         const uint8_t **key_buffer,
+                                         size_t *key_buffer_size)
 {
 #if !defined(MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER)
 
-    size_t key_size = cc3xx_get_key_buffer_size(key_id);
+    size_t key_size = cc3xx_get_opaque_key_buffer_size(key_id);
     psa_key_type_t key_type;
 
     psa_set_key_lifetime(attributes, CC3XX_OPAQUE_KEY_LIFETIME);
