@@ -130,7 +130,13 @@ target_compile_definitions(crypto_service_tfpsacrypto_config
         $<$<BOOL:${PLATFORM_DEFAULT_NV_SEED}>:PLATFORM_DEFAULT_NV_SEED>
         $<$<BOOL:${PLATFORM_DEFAULT_CRYPTO_KEYS}>:PLATFORM_DEFAULT_CRYPTO_KEYS>
         $<$<BOOL:${CRYPTO_TFM_BUILTIN_KEYS_DRIVER}>:PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER>
+        $<$<BOOL:${CRYPTO_TFM_OPAQUE_KEYS_DRIVER}>:CC3XX_CRYPTO_OPAQUE_KEYS>
 )
+
+target_include_directories(crypto_service_tfpsacrypto_config
+    INTERFACE
+        $<$<BOOL:${CRYPTO_TFM_OPAQUE_KEYS_DRIVER}>:${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx/psa_driver_api/include>
+ )
 
 target_link_libraries(crypto_service_tfpsacrypto_config
     INTERFACE

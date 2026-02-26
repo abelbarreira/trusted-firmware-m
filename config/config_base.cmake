@@ -167,6 +167,7 @@ set(ITS_ENCRYPTION                   OFF         CACHE BOOL      "Enable authent
 
 set(TFM_PARTITION_CRYPTO                OFF         CACHE BOOL      "Enable Crypto partition")
 set(CRYPTO_TFM_BUILTIN_KEYS_DRIVER      ON          CACHE BOOL      "Whether to allow crypto service to store builtin keys. Without this, ALL builtin keys must be stored in a platform-specific location")
+set(CRYPTO_TFM_OPAQUE_KEYS_DRIVER       OFF         CACHE BOOL      "Whether to allow crypto service to use opaque keys. This allows accessing hardware-managed keys, which cannot be read by software")
 
 set(TFM_PARTITION_INITIAL_ATTESTATION   OFF         CACHE BOOL      "Enable Initial Attestation partition")
 set(SYMMETRIC_INITIAL_ATTESTATION       OFF         CACHE BOOL      "Use symmetric crypto for inital attestation")

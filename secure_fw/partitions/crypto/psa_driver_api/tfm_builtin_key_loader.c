@@ -11,6 +11,9 @@
 #include "tfm_plat_crypto_keys.h"
 #include "crypto_library.h"
 #include "tfm_log.h"
+#if defined(CC3XX_CRYPTO_OPAQUE_KEYS)
+#include "cc3xx_opaque_keys.h"
+#endif
 
 #ifndef TFM_BUILTIN_MAX_KEY_LEN
 #define TFM_BUILTIN_MAX_KEY_LEN (48)
@@ -208,7 +211,11 @@ psa_status_t tfm_builtin_key_loader_init(void)
     psa_key_type_t type;
 
     for (size_t key = 0; key < number_of_keys; key++) {
-        if (desc_table[key].lifetime != TFM_BUILTIN_KEY_LOADER_LIFETIME) {
+        if ((desc_table[key].lifetime != TFM_BUILTIN_KEY_LOADER_LIFETIME)
+#if defined(CC3XX_CRYPTO_OPAQUE_KEYS)
+            && (desc_table[key].lifetime != CC3XX_OPAQUE_KEY_LIFETIME)
+#endif
+        ) {
             /* If the key is not bound to this driver, just don't load it */
             continue;
         }
