@@ -103,10 +103,29 @@ int mbedtls_platform_get_entropy(psa_driver_get_entropy_flags_t flags,
                                  size_t *estimate_bits,
                                  unsigned char *output, size_t output_size)
 {
+    psa_status_t status;
+    unsigned char *output_ptr = output;
+    size_t remaining_bytes = output_size;
+    size_t entropy_bytes;
+
     /* Note from TF-PSA-Crypto migration guide:
      *  As of TF-PSA-Crypto 1.0, the output must have full entropy, thus `estimate_bits` must be
      *  equal to `8 * output_size`. A future version of TF-PSA-Crypto will allow entropy sources
      *  to report smaller amounts.
      */
-    return cc3xx_get_entropy((uint32_t)flags, estimate_bits, output, output_size);
+    while (remaining_bytes > 0) {
+        *estimate_bits = 0;
+        status = cc3xx_get_entropy((uint32_t)flags, estimate_bits, output_ptr, remaining_bytes);
+        if (status != PSA_SUCCESS) {
+            *estimate_bits = 0;
+            return PSA_ERROR_INSUFFICIENT_ENTROPY;
+        }
+
+        entropy_bytes = (*estimate_bits / 8);
+        output_ptr += entropy_bytes;
+        remaining_bytes -= ((remaining_bytes < entropy_bytes) ? remaining_bytes : entropy_bytes);
+    }
+
+    *estimate_bits = (8 * output_size);
+    return status;
 }
