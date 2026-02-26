@@ -33,7 +33,6 @@ if(BL2)
     target_include_directories(platform_bl2
         PUBLIC
             ../common/nrf5340/partition
-        PRIVATE
             .
     )
 endif()

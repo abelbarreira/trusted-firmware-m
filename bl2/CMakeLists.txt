@@ -145,6 +145,7 @@ add_executable(bl2
     $<$<C_COMPILER_ID:GNU,Clang>:
         ${CMAKE_SOURCE_DIR}/secure_fw/partitions/lib/runtime/crt_start.c
         ${CMAKE_SOURCE_DIR}/secure_fw/partitions/lib/runtime/crt_memcmp.c
+        ${CMAKE_SOURCE_DIR}/secure_fw/partitions/lib/runtime/crt_memmove.c
         ${CMAKE_SOURCE_DIR}/secure_fw/shared/crt_memset.c
         ${CMAKE_SOURCE_DIR}/secure_fw/shared/crt_memcpy.c
     >

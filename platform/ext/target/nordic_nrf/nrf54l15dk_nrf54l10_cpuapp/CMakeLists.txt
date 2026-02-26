@@ -34,7 +34,6 @@ if(BL2)
         PUBLIC
             partition
             ../common/nrf54l10/partition
-        PRIVATE
             .
     )
 endif()
