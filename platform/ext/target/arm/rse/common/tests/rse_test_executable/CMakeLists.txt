@@ -61,10 +61,9 @@ target_add_scatter_file(rse_bl1_tests
 
 target_link_options(rse_bl1_tests
     PRIVATE
-        $<$<C_COMPILER_ID:GNU>:-Wl,-Map=${CMAKE_BINARY_DIR}/bin/rse_bl1_tests.map>
+        $<$<C_COMPILER_ID:GNU,Clang>:LINKER:-Map=${CMAKE_BINARY_DIR}/bin/rse_bl1_tests.map>
         $<$<C_COMPILER_ID:ARMClang>:--map>
         $<$<C_COMPILER_ID:IAR>:--map\;${CMAKE_BINARY_DIR}/bin/rse_bl1_tests.map>
-        $<$<C_COMPILER_ID:Clang>:-Wl,-Map=${CMAKE_BINARY_DIR}/bin/rse_bl1_tests.map>
 )
 
 target_sources(rse_bl1_tests

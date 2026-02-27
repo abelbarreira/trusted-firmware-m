@@ -183,11 +183,10 @@ target_sources(${TF_PSA_CRYPTO_TARGET_PREFIX}tfpsacrypto
 
 target_compile_options(${TF_PSA_CRYPTO_TARGET_PREFIX}tfpsacrypto
     PRIVATE
-        $<$<C_COMPILER_ID:GNU>:-Wno-unused-const-variable>
-        $<$<C_COMPILER_ID:GNU>:-Wno-unused-parameter>
+        $<$<C_COMPILER_ID:GNU,Clang>:-Wno-unused-const-variable>
+        $<$<C_COMPILER_ID:GNU,Clang>:-Wno-unused-parameter>
         $<$<C_COMPILER_ID:ARMClang>:-Wno-unused-const-variable>
         $<$<C_COMPILER_ID:ARMClang>:-Wno-unused-parameter>
-        $<$<C_COMPILER_ID:Clang>:-Wno-unused-parameter>
 )
 
 target_link_libraries(${TF_PSA_CRYPTO_TARGET_PREFIX}tfpsacrypto

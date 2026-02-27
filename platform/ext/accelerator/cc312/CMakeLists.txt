@@ -152,7 +152,7 @@ if (TFM_PARTITION_CRYPTO)
 
         target_compile_options(${CC312_LIB_PREFIX}cc312
             PUBLIC
-                $<$<C_COMPILER_ID:GNU>:-Wno-unused-parameter>
+                $<$<C_COMPILER_ID:GNU,Clang>:-Wno-unused-parameter>
                 $<$<C_COMPILER_ID:ARMClang>:-Wno-unused-parameter>
         )
     endif()
@@ -186,7 +186,7 @@ if (TFM_PARTITION_CRYPTO)
 
     target_compile_options(crypto_service_tfpsacrypto
         PRIVATE
-            $<$<C_COMPILER_ID:GNU>:-Wno-unused-parameter>
+            $<$<C_COMPILER_ID:GNU,Clang>:-Wno-unused-parameter>
             $<$<C_COMPILER_ID:ARMClang>:-Wno-unused-parameter>
     )
 

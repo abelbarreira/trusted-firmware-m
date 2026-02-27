@@ -89,7 +89,7 @@ target_link_options(platform_region_defs
         # normally triggers a linker warning.
         # Since this region is intentionally RWX (RX during boot and RW at runtime), the warning
         # is explicitly suppressed.
-        $<$<AND:$<C_COMPILER_ID:GNU>,$<BOOL:${CONFIG_TFM_REUSE_COPY_AREA_FOR_SP_STACKS}>>:-Wl,--no-warn-rwx-segments>
+        $<$<AND:$<C_COMPILER_ID:GNU,Clang>,$<BOOL:${CONFIG_TFM_REUSE_COPY_AREA_FOR_SP_STACKS}>>:-Wl,--no-warn-rwx-segments>
 )
 
 #========================= Platform common defs ===============================#
@@ -882,10 +882,9 @@ if (RSE_XIP)
 
     target_compile_options(signing_layout_s
         PRIVATE
-            $<$<C_COMPILER_ID:GNU>:-E\;-xc>
+            $<$<C_COMPILER_ID:GNU,Clang>:-E\;-xc>
             $<$<C_COMPILER_ID:ARMClang>:-E\;-xc>
             $<$<C_COMPILER_ID:IAR>:--preprocess=ns\;$<TARGET_OBJECTS:signing_layout_s>>
-            $<$<C_COMPILER_ID:Clang>:-E\;-xc>
     )
     target_compile_definitions(signing_layout_s
         PRIVATE

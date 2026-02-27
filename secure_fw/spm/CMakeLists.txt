@@ -124,7 +124,7 @@ set_source_files_properties(tfm_secure_api.c
     PROPERTIES
         COMPILE_FLAGS
             $<$<C_COMPILER_ID:ARMClang>:-Wno-implicit-function-declaration>
-            $<$<C_COMPILER_ID:GNU>:-Wno-implicit-function-declaration>
+            $<$<C_COMPILER_ID:GNU,Clang>:-Wno-implicit-function-declaration>
             $<$<C_COMPILER_ID:IAR>:>
 )
 

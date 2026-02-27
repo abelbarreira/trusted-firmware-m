@@ -71,10 +71,9 @@ endif()
 add_library(signing_layout_bl1_2 OBJECT signing_layout.c)
 target_compile_options(signing_layout_bl1_2
     PRIVATE
-        $<$<C_COMPILER_ID:GNU>:-E\;-xc>
+        $<$<C_COMPILER_ID:GNU,Clang>:-E\;-xc>
         $<$<C_COMPILER_ID:ARMClang>:-E\;-xc>
         $<$<C_COMPILER_ID:IAR>:--preprocess=ns\;$<TARGET_OBJECTS:signing_layout_bl1_2>>
-        $<$<C_COMPILER_ID:Clang>:-E\;-xc>
 )
 target_link_libraries(signing_layout_bl1_2
     PRIVATE

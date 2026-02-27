@@ -92,9 +92,8 @@ set_source_files_properties(
     ${CMAKE_SOURCE_DIR}/secure_fw/spm/core/psa_interface_thread_fn_call.c
     ${CMAKE_SOURCE_DIR}/secure_fw/spm/core/psa_interface_sfn.c
     PROPERTIES
-    COMPILE_FLAGS $<$<C_COMPILER_ID:GNU>:-Wno-unused-parameter>
+    COMPILE_FLAGS $<$<C_COMPILER_ID:GNU,Clang>:-Wno-unused-parameter>
     COMPILE_FLAGS $<$<C_COMPILER_ID:ARMClang>:-Wno-unused-parameter>
-    COMPILE_FLAGS $<$<C_COMPILER_ID:Clang>:-Wno-unused-parameter>
 )
 
 target_sources(tfm_sprt

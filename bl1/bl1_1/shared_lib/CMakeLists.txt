@@ -37,7 +37,7 @@ target_sources(bl1_1_shared_lib
 target_compile_options(bl1_1_shared_lib_interface
     INTERFACE
         #Prevents warnings caused by C99 static assert workaround
-        $<$<C_COMPILER_ID:GNU>:-Wno-unused-local-typedefs>
+        $<$<C_COMPILER_ID:GNU,Clang>:-Wno-unused-local-typedefs>
         $<$<C_COMPILER_ID:ARMClang>:-Wno-unused-local-typedefs>
 )
 

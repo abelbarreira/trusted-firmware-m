@@ -43,9 +43,8 @@ set(CMSIS_OVERRIDE_HEADER "${CMAKE_CURRENT_LIST_DIR}/include/cmsis_override.h")
 add_library(cmsis_stack_override INTERFACE)
 target_compile_options(cmsis_stack_override
     INTERFACE
-        "$<$<C_COMPILER_ID:GNU>:SHELL:-include ${CMSIS_OVERRIDE_HEADER}>"
+        "$<$<C_COMPILER_ID:GNU,Clang>:SHELL:-include ${CMSIS_OVERRIDE_HEADER}>"
         "$<$<AND:$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>,$<C_COMPILER_ID:IAR>>:SHELL:--preinclude ${CMSIS_OVERRIDE_HEADER}>"
-        "$<$<C_COMPILER_ID:Clang>:SHELL:-include ${CMSIS_OVERRIDE_HEADER}>"
 )
 
 #========================= Platform Common interface ==========================#

@@ -29,5 +29,5 @@ target_link_libraries(tfm_fih
 
 target_compile_options(tfm_fih_headers
     INTERFACE
-        $<$<C_COMPILER_ID:GNU>:-Wno-unused-value>
+        $<$<C_COMPILER_ID:GNU,Clang>:-Wno-unused-value>
 )

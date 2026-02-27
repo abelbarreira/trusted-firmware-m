@@ -88,7 +88,7 @@ function(create_provisioning_code_target target linker_script entry_point
 
     target_link_options(${TARGET_NAME}
         PRIVATE
-        $<$<C_COMPILER_ID:GNU>:-Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/bin/${target}_provisioning_code.map>
+        $<$<C_COMPILER_ID:GNU,Clang>:-Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/bin/${target}_provisioning_code.map>
             $<$<C_COMPILER_ID:ARMClang>:--map>
             $<$<C_COMPILER_ID:IAR>:--map\;${CMAKE_CURRENT_BINARY_DIR}/bin/${target}_provisioning_code.map>
     )

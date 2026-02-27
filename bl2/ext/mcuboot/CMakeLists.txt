@@ -211,10 +211,9 @@ if (PLATFORM_DEFAULT_IMAGE_SIGNING)
 
     target_compile_options(signing_layout_s
         PRIVATE
-            $<$<C_COMPILER_ID:GNU>:-E\;-xc>
+            $<$<C_COMPILER_ID:GNU,Clang>:-E\;-xc>
             $<$<C_COMPILER_ID:ARMClang>:-E\;-xc>
             $<$<C_COMPILER_ID:IAR>:--preprocess=ns\;$<TARGET_OBJECTS:signing_layout_s>>
-            $<$<C_COMPILER_ID:Clang>:-E\;-xc>
     )
     target_compile_definitions(signing_layout_s
         PRIVATE
@@ -290,10 +289,9 @@ if (PLATFORM_DEFAULT_IMAGE_SIGNING)
     add_library(signing_layout_ns OBJECT ${CMAKE_CURRENT_BINARY_DIR}/signing_layout_ns.c)
     target_compile_options(signing_layout_ns
         PRIVATE
-            $<$<C_COMPILER_ID:GNU>:-E\;-xc>
+            $<$<C_COMPILER_ID:GNU,Clang>:-E\;-xc>
             $<$<C_COMPILER_ID:ARMClang>:-E\;-xc>
             $<$<C_COMPILER_ID:IAR>:--preprocess=ns\;$<TARGET_OBJECTS:signing_layout_ns>>
-            $<$<C_COMPILER_ID:Clang>:-E\;-xc>
     )
     target_compile_definitions(signing_layout_ns
         PRIVATE
