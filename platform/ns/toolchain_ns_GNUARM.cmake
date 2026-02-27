@@ -47,19 +47,6 @@ endfunction()
 min_toolchain_version("cortex-m85" "13.0.0")
 min_toolchain_version("cortex-m52" "14.2.0")
 
-# GNU Arm compiler version greater equal than *11.3.Rel1*
-# has a linker issue that required system calls are missing,
-# such as _read and _write. Add stub functions of required
-# system calls to solve this issue.
-#
-# READONLY linker script attribute is not supported in older
-# GNU Arm compilers. For these version the preprocessor will
-# remove the READONLY string from the linker scripts.
-if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 11.3.1)
-    set(CONFIG_GNU_SYSCALL_STUB_ENABLED TRUE)
-    set(CONFIG_GNU_LINKER_READONLY_ATTRIBUTE TRUE)
-endif()
-
 if(CONFIG_TFM_FLOAT_ABI STREQUAL "hard")
     add_compile_options(-mfloat-abi=hard)
     add_link_options(-mfloat-abi=hard)
@@ -161,11 +148,6 @@ macro(target_add_scatter_file target)
             -E
             -P
             -xc
-    )
-
-    target_compile_definitions(${target}_scatter
-        PRIVATE
-            $<$<NOT:$<BOOL:${CONFIG_GNU_LINKER_READONLY_ATTRIBUTE}>>:READONLY=>
     )
 
     set_property(TARGET ${target} APPEND PROPERTY LINK_DEPENDS $<TARGET_OBJECTS:${target}_scatter>)

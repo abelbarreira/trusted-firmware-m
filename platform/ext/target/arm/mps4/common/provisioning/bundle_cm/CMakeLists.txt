@@ -62,7 +62,7 @@ target_sources(cm_provisioning_bundle
     PRIVATE
         cm_provisioning_code.c
         cm_provisioning_data.c
-        $<$<BOOL:${CONFIG_GNU_SYSCALL_STUB_ENABLED}>:${CMAKE_SOURCE_DIR}/platform/ext/common/syscalls_stub.c>
+        $<$<C_COMPILER_ID:GNU>:${CMAKE_SOURCE_DIR}/platform/ext/common/syscalls_stub.c>
 )
 
 target_include_directories(cm_provisioning_bundle

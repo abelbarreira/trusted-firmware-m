@@ -100,19 +100,6 @@ if(NOT CONFIG_TFM_MEMORY_USAGE_QUIET)
     add_link_options(LINKER:--print-memory-usage)
 endif()
 
-# GNU Arm compiler version greater equal than *11.3.Rel1*
-# has a linker issue that required system calls are missing,
-# such as _read and _write. Add stub functions of required
-# system calls to solve this issue.
-#
-# READONLY linker script attribute is not supported in older
-# GNU Arm compilers. For these version the preprocessor will
-# remove the READONLY string from the linker scripts.
-if (CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 11.3.1)
-    set(CONFIG_GNU_SYSCALL_STUB_ENABLED TRUE)
-    set(CONFIG_GNU_LINKER_READONLY_ATTRIBUTE TRUE)
-endif()
-
 set(BL2_COMPILER_CP_FLAG -mfloat-abi=soft)
 set(BL2_LINKER_CP_OPTION -mfloat-abi=soft)
 
@@ -181,11 +168,6 @@ macro(target_add_scatter_file target)
     )
 
     target_compile_options(${target}_scatter PRIVATE -E -P -xc)
-
-    target_compile_definitions(${target}_scatter
-        PRIVATE
-            $<$<NOT:$<BOOL:${CONFIG_GNU_LINKER_READONLY_ATTRIBUTE}>>:READONLY=>
-    )
 endmacro()
 
 # Macro for converting the output *.axf file to finary files: bin, elf, hex

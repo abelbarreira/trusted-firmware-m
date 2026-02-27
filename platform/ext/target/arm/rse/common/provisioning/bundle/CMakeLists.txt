@@ -95,7 +95,7 @@ function(create_provisioning_code_target target linker_script entry_point
 
     target_sources(${TARGET_NAME}
         PRIVATE
-            $<$<BOOL:${CONFIG_GNU_SYSCALL_STUB_ENABLED}>:${CMAKE_SOURCE_DIR}/platform/ext/common/syscalls_stub.c>
+            $<$<C_COMPILER_ID:GNU>:${CMAKE_SOURCE_DIR}/platform/ext/common/syscalls_stub.c>
     )
 
     target_include_directories(${TARGET_NAME}
