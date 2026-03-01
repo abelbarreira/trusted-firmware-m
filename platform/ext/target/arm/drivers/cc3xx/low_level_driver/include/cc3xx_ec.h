@@ -219,6 +219,40 @@ const cc3xx_ec_curve_data_t *cc3xx_lowlevel_ec_get_curve_data(
                                                     cc3xx_ec_curve_id_t curve_id);
 
 /**
+ * @brief                        Perform modular reduction of an arbitrary length
+ *                               scalar with the modulus of the selected curve,
+ *                               i.e. @c out = x mod n.
+ *
+ * @details                      This function interprets the input buffer as a
+ *                               big-endian, unsigned integer and reduces it
+ *                               modulo the curve order @c n, producing a scalar
+ *                               in the range @c [0, n-1]. The output is written
+ *                               as a fixed-length, big-endian byte string of
+ *                               size @c modulus_size for the selected curve.
+ *
+ * @param[in]  curve_id          The elliptic curve identifier (e.g.
+ *                               @c CC3XX_EC_CURVE_SECP_384_R1).
+ * @param[in]  x                 The buffer containing the scalar to reduce,
+ *                               encoded as a big-endian integer.
+ * @param[in]  x_len             The size of @p x in bytes.
+ * @param[out] out               The buffer to write the reduced scalar into,
+ *                               encoded as a big-endian integer of fixed length
+ *                               equal to the curve modulus size.
+ * @param[in]  out_size          The size of @p out in bytes. Must be at least
+ *                               the curve modulus size.
+ * @param[out] out_len           Optional. On success, set to the number of bytes
+ *                               written to @p out (always the curve modulus size).
+ *                               May be NULL.
+ *
+ * @return                       CC3XX_ERR_SUCCESS on success, another
+ *                               cc3xx_err_t on error.
+ */
+cc3xx_err_t cc3xx_lowlevel_ec_scalar_reduce_curve_order(
+        cc3xx_ec_curve_id_t curve_id,
+        const uint32_t *x, size_t x_len,
+        uint32_t *out, size_t out_size, size_t *out_len);
+
+/**
  * @brief De-initializes the Elliptic Curve operation
  *
  */

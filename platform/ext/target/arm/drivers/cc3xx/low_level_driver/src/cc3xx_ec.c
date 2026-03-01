@@ -663,6 +663,83 @@ cc3xx_err_t cc3xx_lowlevel_ec_shamir_multiply_points_by_scalars_and_add(
     return err;
 }
 
+cc3xx_err_t cc3xx_lowlevel_ec_scalar_reduce_curve_order(
+    cc3xx_ec_curve_id_t curve_id,
+    const uint32_t *x, size_t x_len,
+    uint32_t *out, size_t out_size, size_t *out_len)
+{
+    cc3xx_err_t err = CC3XX_ERR_SUCCESS;
+    cc3xx_pka_reg_id_t x_reg;
+    cc3xx_pka_reg_id_t order_reg;
+    cc3xx_pka_reg_id_t barrett_reg;
+
+    const cc3xx_ec_curve_data_t *curve_data = cc3xx_lowlevel_ec_get_curve_data(curve_id);
+
+    if (curve_data == NULL) {
+        return CC3XX_ERR_EC_CURVE_NOT_SUPPORTED;
+    }
+
+    if (x == NULL || out == NULL) {
+        return CC3XX_ERR_INVALID_DATA;
+    }
+
+    if (out_size < curve_data->modulus_size) {
+        return CC3XX_ERR_BUFFER_OVERFLOW;
+    }
+
+    if (x_len == 0) {
+        return CC3XX_ERR_INVALID_INPUT_LENGTH;
+    }
+
+    cc3xx_lowlevel_pka_init(x_len);
+
+    x_reg       = cc3xx_lowlevel_pka_allocate_reg();
+    order_reg   = cc3xx_lowlevel_pka_allocate_reg();
+    barrett_reg = cc3xx_lowlevel_pka_allocate_reg();
+
+    /* Load Barrett tag and curve order (n) */
+    cc3xx_lowlevel_pka_write_reg(barrett_reg,
+                                 curve_data->barrett_tag,
+                                 curve_data->barrett_tag_size);
+
+    cc3xx_lowlevel_pka_write_reg(order_reg,
+                                 curve_data->order,
+                                 curve_data->modulus_size);
+
+    /*
+     * Write input scalar into PKA register.
+     * The input buffer is integer big-endian; PKA expects little-endian words,
+     * so swap endianness when writing.
+     */
+    cc3xx_lowlevel_pka_write_secret_reg_swap_endian(x_reg, x, x_len);
+
+    /* Optional sanity check: ensure input is non-zero before reduction */
+    if (!cc3xx_lowlevel_pka_greater_than_si(x_reg, 0)) {
+        err = CC3XX_ERR_ECDSA_INVALID_KEY;
+        goto out;
+    }
+
+    /* Configure modulus and perform reduction: x_reg = x_reg mod n */
+    cc3xx_lowlevel_pka_set_modulus(order_reg, false, barrett_reg);
+
+    cc3xx_lowlevel_pka_reduce(x_reg);
+
+    /*
+     * Read reduced scalar back as fixed-length big-endian buffer
+     * of size curve_data->modulus_size.
+     */
+    cc3xx_lowlevel_pka_read_secret_reg_swap_endian(x_reg, out, curve_data->modulus_size);
+
+    if (out_len != NULL) {
+        *out_len = curve_data->modulus_size;
+    }
+
+out:
+    cc3xx_lowlevel_pka_uninit();
+
+    return err;
+}
+
 void cc3xx_lowlevel_ec_uninit(void)
 {
     cc3xx_lowlevel_pka_uninit();
