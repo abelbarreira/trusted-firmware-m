@@ -181,8 +181,7 @@ cc3xx_err_t cc3xx_lowlevel_ecdsa_derive_key(
     uint32_t *output_key, size_t out_size, size_t *out_length)
 {
     cc3xx_err_t err;
-    cc3xx_pka_reg_id_t private_key_reg;
-    cc3xx_pka_reg_id_t order_reg, barrett_tag;
+    size_t out_len = 0;
     const cc3xx_ec_curve_data_t *curve_data = cc3xx_lowlevel_ec_get_curve_data(curve_id);
 
     if (curve_data == NULL) {
@@ -207,45 +206,20 @@ cc3xx_err_t cc3xx_lowlevel_ecdsa_derive_key(
         return err;
     }
 
-    cc3xx_lowlevel_pka_init(sizeof(kdf_output));
-
-    private_key_reg = cc3xx_lowlevel_pka_allocate_reg();
-    order_reg = cc3xx_lowlevel_pka_allocate_reg();
-    barrett_tag = cc3xx_lowlevel_pka_allocate_reg();
-
-    cc3xx_lowlevel_pka_write_reg(
-        barrett_tag, curve_data->barrett_tag, curve_data->barrett_tag_size);
-
-    cc3xx_lowlevel_pka_write_reg(
-        order_reg, curve_data->order, curve_data->modulus_size);
-
-    /* The derived key is treated as a number hence when storing
-     * it in the PKA as LE we need to swap the endianess of the
-     * memory buffer that holds the key when writing it
-     */
-    cc3xx_lowlevel_pka_write_secret_reg_swap_endian(
-        private_key_reg, kdf_output, sizeof(kdf_output));
-
-    /* This should never happen in normal operation */
-    if (!cc3xx_lowlevel_pka_greater_than_si(private_key_reg, 0)) {
-        err = CC3XX_ERR_ECDSA_INVALID_KEY;
-        goto out;
+    /* Reduce mod curve order */
+    err = cc3xx_lowlevel_ec_scalar_reduce_curve_order(curve_id,
+                                                      kdf_output, sizeof(kdf_output),
+                                                      output_key, out_size,
+                                                      &out_len);
+    if (err != CC3XX_ERR_SUCCESS) {
+        return err;
     }
 
-    cc3xx_lowlevel_pka_set_modulus(order_reg, false, barrett_tag);
-
-    cc3xx_lowlevel_pka_reduce(private_key_reg);
-
-    cc3xx_lowlevel_pka_read_secret_reg_swap_endian(private_key_reg, output_key, curve_data->modulus_size);
-
-    if (out_length != NULL) {
-        *out_length = curve_data->modulus_size;
+    if (out_length) {
+        *out_length = out_len;
     }
 
-out:
-    cc3xx_lowlevel_pka_uninit();
-
-    return err;
+    return CC3XX_ERR_SUCCESS;
 }
 
 cc3xx_err_t cc3xx_lowlevel_ecdsa_getpub(cc3xx_ec_curve_id_t curve_id,
