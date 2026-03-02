@@ -116,9 +116,11 @@ target_include_directories(platform_s
     INTERFACE
         cc312
         bootloader
-        soft_crc
         io
         partition
+        ${CMAKE_SOURCE_DIR}/lib/ext/efi_soft_crc/inc
+        ${CMAKE_SOURCE_DIR}/lib/efi_guid/inc # for efi_guid_structs.h
+        ${CMAKE_SOURCE_DIR}/lib/gpt/inc
 )
 
 target_sources(platform_s
@@ -137,17 +139,19 @@ target_sources(platform_s
         $<$<BOOL:TFM_PARTITION_PLATFORM>:${CMAKE_CURRENT_SOURCE_DIR}/services/src/tfm_platform_system.c>
         bootloader/mcuboot/tfm_mcuboot_fwu.c
         bootloader/mcuboot/uefi_fmp.c
-        soft_crc/soft_crc.c
-        io/io_block.c
-        io/io_flash.c
-        io/io_storage.c
-        partition/partition.c
-        partition/gpt.c
         $<$<NOT:$<BOOL:${PLATFORM_DEFAULT_OTP}>>:${PLATFORM_DIR}/ext/accelerator/cc312/otp_cc312.c>
         rse_comms_permissions_hal.c
         mem_check_v6m_v7m_hal.c
         ${PLATFORM_DIR}/ext/common/mem_check_v6m_v7m.c
-	 platform.c
+        io/io_gpt.c
+        platform.c
+)
+
+target_link_libraries(platform_s
+    PUBLIC
+        tfm_log
+    PRIVATE
+        tfm_gpt
 )
 
 if (PLATFORM_IS_FVP)
@@ -169,6 +173,9 @@ target_compile_definitions(platform_s
     PUBLIC
         $<$<BOOL:${EXTERNAL_SYSTEM_SUPPORT}>:EXTERNAL_SYSTEM_SUPPORT>
         $<$<BOOL:${PLATFORM_IS_FVP}>:PLATFORM_IS_FVP>
+        TFM_GPT_BLOCK_SIZE=${TFM_GPT_BLOCK_SIZE}
+        PLAT_MAX_PARTITION_ENTRIES=${PLAT_MAX_PARTITION_ENTRIES}
+        LOG_LEVEL=${GPT_LOG_LEVEL}
     PRIVATE
         $<$<BOOL:${TFM_S_REG_TEST}>:TFM_S_REG_TEST>
         $<$<BOOL:${ENABLE_FWU_AGENT_DEBUG_LOGS}>:ENABLE_FWU_AGENT_DEBUG_LOGS>
@@ -202,7 +209,6 @@ target_sources(platform_bl1_1
         ./bl1/provisioning.c
         ./bootloader/mcuboot/tfm_mcuboot_fwu.c
         ./bootloader/mcuboot/uefi_fmp.c
-        ./soft_crc/soft_crc.c
         $<$<NOT:$<BOOL:${PLATFORM_DEFAULT_OTP}>>:${PLATFORM_DIR}/ext/accelerator/cc312/otp_cc312.c>
         ${CMAKE_CURRENT_SOURCE_DIR}/bl1/cc312_rom_crypto.c
         ${CMAKE_CURRENT_SOURCE_DIR}/bl1/cc312_rom_random.c
@@ -229,7 +235,6 @@ target_include_directories(platform_bl1_1_interface
         ./Native_Driver
         ./CMSIS_Driver/Config
         ./bootloader
-        ./soft_crc
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/cfi
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/common
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/strata
@@ -241,16 +246,20 @@ target_include_directories(platform_bl1_1_interface
         $<$<BOOL:${CRYPTO_HW_ACCELERATOR}>:${CMAKE_SOURCE_DIR}/platform/ext/accelerator/interface>
         ${PLATFORM_DIR}/ext/accelerator/cc312/
         ${CMAKE_SOURCE_DIR}/lib/fih/inc/
+        ${CMAKE_SOURCE_DIR}/lib/gpt/inc # for GPT_ENTRY_NAME_LENGTH
 )
 
 target_link_libraries(platform_bl1_1
     PRIVATE
         cc3xx
+        tfm_efi_soft_crc
+        tfm_efi_guid
 )
 
 target_include_directories(platform_bl1_1
     PRIVATE
     ${CMAKE_SOURCE_DIR}/interface/include # for psa/error.h
+    ${CMAKE_SOURCE_DIR}/lib/gpt/inc
 )
 
 target_compile_definitions(bl1_1_psa_crypto_interface
@@ -293,7 +302,6 @@ target_include_directories(platform_bl1_2
         ./Native_Driver
         ./CMSIS_Driver/Config
         ./bootloader
-        ./soft_crc
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/common
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/cfi
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/strata
@@ -302,6 +310,13 @@ target_include_directories(platform_bl1_2
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/sst26vf064b/
         ${PLATFORM_DIR}/ext/accelerator/cc312/
         ${CMAKE_SOURCE_DIR}/interface/include # for psa/error.h
+        ${CMAKE_SOURCE_DIR}/lib/gpt/inc # for GPT_ENTRY_NAME_LENGTH
+)
+
+target_link_libraries(platform_bl1_2
+    PRIVATE
+        tfm_efi_soft_crc
+        tfm_efi_guid
 )
 
 #========================= Platform BL2 =======================================#
@@ -321,12 +336,7 @@ target_sources(platform_bl2
         bootloader/mcuboot/tfm_mcuboot_fwu.c
         bl2/security_cnt_bl2.c
         $<$<NOT:$<BOOL:${PLATFORM_DEFAULT_OTP}>>:${PLATFORM_DIR}/ext/accelerator/cc312/otp_cc312.c>
-        io/io_block.c
-        io/io_flash.c
-        io/io_storage.c
-        soft_crc/soft_crc.c
-        partition/partition.c
-        partition/gpt.c
+        io/io_gpt.c
         platform.c
 )
 
@@ -346,6 +356,10 @@ target_sources(platform_bl2
 endif()
 
 target_compile_definitions(platform_bl2
+    PUBLIC
+        TFM_GPT_BLOCK_SIZE=${TFM_GPT_BLOCK_SIZE}
+        PLAT_MAX_PARTITION_ENTRIES=${PLAT_MAX_PARTITION_ENTRIES}
+        LOG_LEVEL=${GPT_LOG_LEVEL}
     PRIVATE
         $<$<BOOL:${PLATFORM_IS_FVP}>:PLATFORM_IS_FVP>
         $<$<BOOL:${TFM_S_REG_TEST}>:TFM_S_REG_TEST>
@@ -365,6 +379,12 @@ target_sources(bl2
 target_link_libraries(bl2
     PRIVATE
         $<$<AND:$<BOOL:${PLATFORM_PSA_ADAC_SECURE_DEBUG}>,$<NOT:$<BOOL:${PSA_ADAC_AS_TFM_RUNTIME_SERVICE}>>>:trusted-firmware-m-psa-adac>
+        tfm_log
+)
+
+target_link_libraries(platform_bl2
+    PRIVATE
+        tfm_gpt
 )
 
 target_compile_definitions(bl2
@@ -377,6 +397,10 @@ target_compile_definitions(bl2
 target_include_directories(bl2
     PRIVATE
        ${CMAKE_SOURCE_DIR}/interface/include # for psa/error.h
+       ${CMAKE_SOURCE_DIR}/lib/efi_guid/inc # for efi_guid_structs.h
+       ${CMAKE_SOURCE_DIR}/lib/gpt/inc
+       ${CMAKE_SOURCE_DIR}/lib/tfm_log/inc
+       ${CMAKE_SOURCE_DIR}/lib/tfm_vprintf/inc
 )
 
 target_compile_definitions(bootutil
@@ -391,7 +415,6 @@ target_include_directories(platform_bl2
         fip_parser
         Native_Driver
         bootloader
-        soft_crc
         io
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/common
         ${PLATFORM_DIR}/ext/target/arm/drivers/flash/cfi
@@ -410,6 +433,9 @@ target_include_directories(platform_bl2
         ${CMAKE_BINARY_DIR}/bl2/ext/mcuboot # for mcuboot_config.h only
         $<BUILD_INTERFACE:${BL2_SOURCE}/ext/mcuboot/include>
         ${CMAKE_SOURCE_DIR}/interface/include # for psa/error.h
+        ${CMAKE_SOURCE_DIR}/lib/ext/efi_soft_crc/inc
+        ${CMAKE_SOURCE_DIR}/lib/efi_guid/inc
+        ${CMAKE_SOURCE_DIR}/lib/gpt/inc
 )
 
 #========================= ns_agent_mailbox ===================================#

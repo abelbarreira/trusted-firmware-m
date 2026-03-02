@@ -11,7 +11,6 @@
 #include "platform_base_address.h"
 #include "firewall.h"
 #include "tfm_log_unpriv.h"
-#include "s_io_storage_test.h"
 
 /* TODO: if needed each test function can be made as a separate test case, in
  * such case EXTRA_TEST_XX definitions can be removed */

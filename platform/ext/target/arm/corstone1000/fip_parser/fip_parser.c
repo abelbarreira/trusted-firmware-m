@@ -19,6 +19,8 @@
 #include "fip_parser.h"
 #include "bootutil/bootutil_log.h"
 
+#include "efi_guid_structs.h"
+
 #include <region_defs.h>
 #include <string.h>
 
@@ -27,13 +29,14 @@ int parse_fip_and_extract_tfa_info(uint32_t address, uint32_t fip_size,
 {
     FIP_TOC_HEADER *toc_header = NULL;
     FIP_TOC_ENTRY *toc_entry = NULL;
-    uuid_t uuid_null = {0};
-    uuid_t tfa_uuid = UUID_TRUSTED_BOOT_FIRMWARE_BL2;
+    struct efi_guid_t uuid_null = NULL_GUID;
+    struct efi_guid_t tfa_uuid = UUID_TRUSTED_BOOT_FIRMWARE_BL2;
     char *iter;
 
     toc_header = (FIP_TOC_HEADER *) address;
 
     if (toc_header->name != TOC_HEADER_NAME) {
+        BOOT_LOG_ERR("TOC header name does not match");
         return FIP_PARSER_ERROR;
     }
 
@@ -43,11 +46,11 @@ int parse_fip_and_extract_tfa_info(uint32_t address, uint32_t fip_size,
         iter <= (char *)toc_header + fip_size;
         iter = iter + sizeof(FIP_TOC_ENTRY), toc_entry++) {
 
-        if (!memcmp(iter, &uuid_null, sizeof(uuid_t))) {
+        if (efi_guid_cmp((struct efi_guid_t *)iter, &uuid_null) == 0) {
             return FIP_PARSER_ERROR;
         }
 
-        if (!memcmp(iter, &tfa_uuid, sizeof(uuid_t))) {
+        if (efi_guid_cmp((struct efi_guid_t *)iter, &tfa_uuid) == 0) {
             BOOT_LOG_INF("TF-A FIP at : address = 0x%x : size = 0x%x \n\r",
                                 toc_entry->address,
                                 toc_entry->size);
@@ -57,5 +60,6 @@ int parse_fip_and_extract_tfa_info(uint32_t address, uint32_t fip_size,
         }
     }
 
+    BOOT_LOG_ERR("Unable to find TF-A FIP\r\n");
     return FIP_PARSER_ERROR;
 }

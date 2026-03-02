@@ -24,8 +24,9 @@ extern "C"
 {
 #endif
 
+#include "efi_guid_structs.h"
+
 #include <stdint.h>
-#include "external/uuid.h"
 
 /* Return code of fip parser APIs */
 #define FIP_PARSER_SUCCESS                     (0)
@@ -35,10 +36,13 @@ extern "C"
 #define TOC_HEADER_NAME 0xAA640001
 
 /* ToC Entry UUIDs */
-#define UUID_TRUSTED_BOOT_FIRMWARE_BL2 \
-    {{0x5f, 0xf9, 0xec, 0x0b}, {0x4d, 0x22}, \
-    {0x3e, 0x4d}, 0xa5, 0x44, \
-    {0xc3, 0x9d, 0x81, 0xc7, 0x3f, 0x0a} }
+#define UUID_TRUSTED_BOOT_FIRMWARE_BL2  \
+    MAKE_EFI_GUID(                      \
+            0x0BECF95F,                 \
+            0x224D,                     \
+            0x4D3E,                     \
+            0xA5, 0x44,                 \
+            0xC3, 0x9D, 0x81, 0xC7, 0x3F, 0x0A)
 
 typedef struct _FIP_TOC_HEADER {
     uint32_t    name;
@@ -52,12 +56,12 @@ typedef struct _FIP_TOC_HEADER {
 */
 
 typedef struct _FIP_TOC_ENTRY {
-    uuid_t      uuid;
-    uint32_t    address;
-    uint32_t    pad1;
-    uint32_t    size;
-    uint32_t    pad2;
-    uint64_t    flags;
+    struct efi_guid_t   uuid;
+    uint32_t            address;
+    uint32_t            pad1;
+    uint32_t            size;
+    uint32_t            pad2;
+    uint64_t            flags;
 } FIP_TOC_ENTRY;
 
 int parse_fip_and_extract_tfa_info(uint32_t address, uint32_t fip_size,

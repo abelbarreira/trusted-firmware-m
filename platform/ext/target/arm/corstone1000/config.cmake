@@ -50,6 +50,7 @@ set(DEFAULT_MCUBOOT_SECURITY_COUNTERS       OFF          CACHE BOOL      "Whethe
 # LOG LEVEL
 set(TFM_SPM_LOG_LEVEL                   LOG_LEVEL_INFO          CACHE STRING    "Set default SPM log level as INFO level")
 set(TFM_PARTITION_LOG_LEVEL             LOG_LEVEL_INFO          CACHE STRING    "Set default Secure Partition log level as INFO level")
+set(GPT_LOG_LEVEL                       LOG_LEVEL_INFO          CACHE STRING    "Set default GPT library log level as INFO level")
 
 # Partition
 set(TFM_PARTITION_PLATFORM              ON          CACHE BOOL      "Enable Platform partition")
@@ -65,6 +66,9 @@ set(TFM_FWU_BOOTLOADER_LIB                "${CMAKE_CURRENT_LIST_DIR}/bootloader/
 set(TFM_CONFIG_FWU_MAX_MANIFEST_SIZE      0          CACHE STRING    "The maximum permitted size for manifest in psa_fwu_start(), in bytes.")
 set(TFM_CONFIG_FWU_MAX_WRITE_SIZE         4096       CACHE STRING    "The maximum permitted size for block in psa_fwu_write, in bytes.")
 set(FWU_SUPPORT_TRIAL_STATE               ON         CACHE BOOL      "Device support TRIAL component state.")
+set(PLATFORM_GPT_LIBRARY                  ON         CACHE BOOL      "Build the GPT library")
+set(TFM_GPT_BLOCK_SIZE                    512        CACHE STRING    "The block size of a device formatted as a GUID Partition Table.")
+set(PLAT_MAX_PARTITION_ENTRIES            16         CACHE STRING    "The maximum number of GPT partition entries.")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL Debug OR ${CMAKE_BUILD_TYPE} STREQUAL RelWithDebInfo)
   set(ENABLE_FWU_AGENT_DEBUG_LOGS     TRUE          CACHE BOOL      "Enable Firmware update agent debug logs.")

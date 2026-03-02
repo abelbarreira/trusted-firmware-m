@@ -4,17 +4,19 @@
  * SPDX-License-Identifier: BSD-3-Clause
  *
  */
+#include <errno.h>
 #include <string.h>
 #include "psa/crypto.h"
 #include "psa/error.h"
 #include "tfm_bootloader_fwu_abstraction.h"
+#include "efi_soft_crc.h"
 
 #include <stdint.h>
 #include <string.h>
 #include "fwu_agent.h"
 #include "Driver_Flash.h"
+#include "efi_guid_structs.h"
 #include "flash_layout.h"
-#include "fip_parser/external/uuid.h"
 #include "region_defs.h"
 #include "flash_common.h"
 #include "platform_base_address.h"
@@ -23,10 +25,10 @@
 #include "tfm_plat_defs.h"
 #include "uefi_fmp.h"
 #include "uart_stdout.h"
-#include "soft_crc.h"
 #ifndef BL1_BUILD
-#include "partition.h"
+#include "gpt.h"
 #include "platform.h"
+#include "io_gpt.h"
 #endif
 
 #define FWU_METADATA_VERSION		2
@@ -72,7 +74,7 @@
 struct fwu_image_properties {
 
         /* The UUID of the image in this bank */
-        uuid_t img_uuid;
+        struct efi_guid_t img_uuid;
 
         /* [0]: bit describing the image acceptance status –
          * status - 1 means the image is accepted
@@ -90,10 +92,10 @@ struct fwu_image_properties {
 struct fwu_image_entry {
 
         /* The UUID identifying the image type */
-        uuid_t img_type_uuid;
+        struct efi_guid_t img_type_uuid;
 
         /* The UUID of the storage volume where the image is located */
-        uuid_t location_uuid;
+        struct efi_guid_t location_uuid;
 
         /* The Properties of images with img_type_uuid in the different FW banks */
         struct fwu_image_properties img_props[NR_OF_FW_BANKS];
@@ -206,99 +208,114 @@ struct __attribute__((__packed__)) fwu_esrt_data_wrapper {
  * The GUIDs are generating with the UUIDv5 format.
  * Namespace used for FVP GUIDs: 989f3a4e-46e0-4cd0-9877-a25c70c01329
  * Namespace used for MPS3 GUIDs: df1865d1-90fb-4d59-9c38-c9f2c1bba8cc
- * Names: the image names stated in the fw_name field
  */
-fwu_bank_image_info_t fwu_image[NR_OF_IMAGES_IN_FW_BANK] = {
+const fwu_image_info_t fwu_image[NR_OF_IMAGES_IN_FW_BANK] = {
 #if PLATFORM_IS_FVP
     // FVP payloads GUIDs
-    // bl2_signed
     {
+        .image_name = "bl2_secondary",
         .image_size = SE_BL2_PARTITION_SIZE,
         .image_offset = SE_BL2_PARTITION_BANK_OFFSET,
-        .image_guid = {
+        .image_type = {
             .time_low = 0xf1d883f9,
             .time_mid = 0xdfeb,
             .time_hi_and_version = 0x5363,
-            .clock_seq_and_node = {0x98, 0xd8, 0x68, 0x6e, 0xe3, 0xb6, 0x9f, 0x4f}
+            .clock_seq_hi_and_reserved = 0x98,
+            .clock_seq_low = 0xd8,
+            .node = {0x68, 0x6e, 0xe3, 0xb6, 0x9f, 0x4f}
         },
     },
-    // tfm_s_signed
     {
+        .image_name = "tfm_secondary",
         .image_size = TFM_PARTITION_SIZE,
         .image_offset = TFM_PARTITION_BANK_OFFSET,
-        .image_guid = {
+        .image_type = {
             .time_low = 0x7fad470e,
             .time_mid = 0x5ec5,
             .time_hi_and_version = 0x5c03,
-            .clock_seq_and_node = {0xa2, 0xc1, 0x47, 0x56, 0xb4, 0x95, 0xde, 0x61}
+            .clock_seq_hi_and_reserved = 0xa2,
+            .clock_seq_low = 0xc1,
+            .node = {0x47, 0x56, 0xb4, 0x95, 0xde, 0x61}
         },
     },
-    // signed_fip-corstone1000
     {
+        .image_name = "FIP_B",
         .image_size = FIP_PARTITION_SIZE,
         .image_offset = FIP_PARTITION_BANK_OFFSET,
-        .image_guid = {
+        .image_type = {
             .time_low = 0xf1933675,
             .time_mid = 0x5a8c,
             .time_hi_and_version = 0x5b6d,
-            .clock_seq_and_node = {0x9e, 0xf4, 0x84, 0x67, 0x39, 0xe8, 0x9b, 0xc8}
+            .clock_seq_hi_and_reserved = 0x9e,
+            .clock_seq_low = 0xf4,
+            .node = {0x84, 0x67, 0x39, 0xe8, 0x9b, 0xc8}
         },
     },
-    // Image.gz-initramfs-corstone1000-fvp
     {
+        .image_name = "kernel_secondary",
         .image_size = INITRAMFS_PARTITION_SIZE,
         .image_offset = INITRAMFS_PARTITION_BANK_OFFSET,
-        .image_guid = {
+        .image_type = {
             .time_low = 0xf771aff9,
             .time_mid = 0xc7e9,
             .time_hi_and_version = 0x5f99,
-            .clock_seq_and_node = {0x9e, 0xda, 0x23, 0x69, 0xdd, 0x69, 0x4f, 0x61}
+            .clock_seq_hi_and_reserved = 0x9e,
+            .clock_seq_low = 0xda,
+            .node = {0x23, 0x69, 0xdd, 0x69, 0x4f, 0x61}
         },
     },
 #else
     // MPS3 payloads GUIDs
-    // bl2_signed payload GUID
     {
+        .image_name = "bl2_secondary",
         .image_size = SE_BL2_PARTITION_SIZE,
         .image_offset = SE_BL2_PARTITION_BANK_OFFSET,
-        .image_guid = {
+        .image_type = {
             .time_low = 0xfbfbefaa,
             .time_mid = 0x0a56,
             .time_hi_and_version = 0x50d5,
-            .clock_seq_and_node = {0xb6, 0x51, 0x74, 0x09, 0x1d, 0x3d, 0x62, 0xcf}
+            .clock_seq_hi_and_reserved = 0xb6,
+            .clock_seq_low = 0x51,
+            .node = {0x74, 0x09, 0x1d, 0x3d, 0x62, 0xcf}
         },
     },
-    // tfm_s_signed
     {
+        .image_name = "tfm_secondary",
         .image_size = TFM_PARTITION_SIZE,
         .image_offset = TFM_PARTITION_BANK_OFFSET,
-        .image_guid = {
+        .image_type = {
             .time_low = 0xaf4cc7ad,
             .time_mid = 0xee2e,
             .time_hi_and_version = 0x5a39,
-            .clock_seq_and_node = {0xaa, 0xd5, 0xfa, 0xc8, 0xa1, 0xe6, 0x17, 0x3c}
-        },
+            .clock_seq_hi_and_reserved = 0xaa,
+            .clock_seq_low = 0xd5,
+            .node = {0xfa, 0xc8, 0xa1, 0xe6, 0x17, 0x3c}
+        }
     },
-    // signed_fip-corstone1000
     {
+        .image_name = "FIP_B",
         .image_size = FIP_PARTITION_SIZE,
         .image_offset = FIP_PARTITION_BANK_OFFSET,
-        .image_guid = {
+        .image_type = {
             .time_low = 0x55302f96,
             .time_mid = 0xc4f0,
             .time_hi_and_version = 0x5cf9,
-            .clock_seq_and_node = {0x86, 0x24, 0xe7, 0xcc, 0x38, 0x8f, 0x2b, 0x68}
-        },
+            .clock_seq_hi_and_reserved = 0x86,
+            .clock_seq_low = 0x24,
+            .node = {0xe7, 0xcc, 0x38, 0x8f, 0x2b, 0x68}
+        }
     },
-    // Image.gz-initramfs-corstone1000-mps3
     {
+        .image_name = "kernel_secondary",
         .image_size = INITRAMFS_PARTITION_SIZE,
         .image_offset = INITRAMFS_PARTITION_BANK_OFFSET,
-        .image_guid = {
+        .image_type = {
             .time_low = 0x3e8ac972,
             .time_mid = 0xc33c,
             .time_hi_and_version = 0x5cc9,
-            .clock_seq_and_node = {0x90, 0xa0, 0xcd, 0xd3, 0x15, 0x96, 0x83, 0xea}
+            .clock_seq_hi_and_reserved = 0x90,
+            .clock_seq_low = 0xa0,
+            .node = {0xcd, 0xd3, 0x15, 0x96, 0x83, 0xea}
         },
     },
 #endif
@@ -370,8 +387,8 @@ static psa_status_t private_metadata_read(
 static psa_status_t private_metadata_read(
         struct fwu_private_metadata* priv_metadata)
 {
-    partition_entry_t *part;
-    uuid_t private_uuid = PRIVATE_METADATA_TYPE_UUID;
+    struct partition_entry_t part;
+    struct efi_guid_t private_uuid = PRIVATE_METADATA_TYPE_UUID;
 
     FWU_LOG_FUNC_ENTER;
 
@@ -380,13 +397,19 @@ static psa_status_t private_metadata_read(
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
-    part = get_partition_entry_by_type(&private_uuid);
-    if (!part) {
+    psa_status_t ret = gpt_entry_read_by_type(&private_uuid, 0, &part);
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
         FWU_LOG_MSG("Private metadata partition not found\n\r");
-        return PSA_ERROR_GENERIC_ERROR;
+        return ret;
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        FWU_LOG_MSG("%s : ERROR - flash failure reading private metadata\n\r", __func__);
+        return ret;
+    } else if (ret < 0) {
+        FWU_LOG_MSG("Unable to find private metadata partition, ret: %d\n\r", ret);
+        return ret;
     }
 
-    int ret = FWU_METADATA_FLASH_DEV.ReadData(part->start, priv_metadata,
+    ret = FWU_METADATA_FLASH_DEV.ReadData(part.start * TFM_GPT_BLOCK_SIZE, priv_metadata,
                                           sizeof(*priv_metadata));
     if (ret < 0) {
         FWU_LOG_MSG("%s: ERROR - Flash read failed (ret = %d)\n\r", __func__, ret);
@@ -444,8 +467,8 @@ static psa_status_t private_metadata_write(
 static psa_status_t private_metadata_write(
         struct fwu_private_metadata* priv_metadata)
 {
-    uuid_t private_uuid = PRIVATE_METADATA_TYPE_UUID;
-    partition_entry_t *part;
+    struct efi_guid_t private_uuid = PRIVATE_METADATA_TYPE_UUID;
+    struct partition_entry_t part;
 
     FWU_LOG_MSG("%s: enter: boot_index = %u\n\r", __func__,
                         priv_metadata->boot_index);
@@ -455,19 +478,25 @@ static psa_status_t private_metadata_write(
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
-    part = get_partition_entry_by_type(&private_uuid);
-    if (!part) {
+    psa_status_t ret = gpt_entry_read_by_type(&private_uuid, 0, &part);
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
         FWU_LOG_MSG("Private metadata partition not found\n\r");
-        return PSA_ERROR_GENERIC_ERROR;
+        return ret;
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        FWU_LOG_MSG("%s: ERROR - flash failure reading private metadata\n\r", __func__);
+        return ret;
+    } else if (ret < 0) {
+        FWU_LOG_MSG("Unable to find private metadata partition, ret: %d\n\r", ret);
+        return ret;
     }
 
-    int ret = FWU_METADATA_FLASH_DEV.EraseSector(part->start);
+    ret = FWU_METADATA_FLASH_DEV.EraseSector(part.start * TFM_GPT_BLOCK_SIZE);
     if (ret != ARM_DRIVER_OK) {
         FWU_LOG_MSG("%s: ERROR - Flash erase failed (ret = %d)\n\r", __func__, ret);
         return PSA_ERROR_STORAGE_FAILURE;
     }
 
-    ret = FWU_METADATA_FLASH_DEV.ProgramData(part->start,
+    ret = FWU_METADATA_FLASH_DEV.ProgramData(part.start * TFM_GPT_BLOCK_SIZE,
                                 priv_metadata, sizeof(*priv_metadata));
     if (ret < 0) {
         FWU_LOG_MSG("%s: ERROR - Flash write failed (ret = %d)\n\r", __func__, ret);
@@ -494,8 +523,10 @@ static psa_status_t metadata_validate(struct fwu_metadata *metadata)
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
-    uint32_t calculated_crc32 = crc32((uint8_t *)&(metadata->version),
-                                      sizeof(*metadata) - sizeof(uint32_t));
+    uint32_t calculated_crc32 = efi_soft_crc32_update(
+            0,
+            (uint8_t *)&(metadata->version),
+            sizeof(*metadata) - sizeof(uint32_t));
 
     if (metadata->crc_32 != calculated_crc32) {
         FWU_LOG_MSG("%s: failed: crc32 calculated: 0x%x, given: 0x%x\n\r", __func__,
@@ -558,8 +589,8 @@ static psa_status_t metadata_read(struct fwu_metadata *metadata, uint8_t replica
 #else
 static psa_status_t metadata_read(struct fwu_metadata *metadata, uint8_t replica_num)
 {
-    uuid_t metadata_uuid = FWU_METADATA_TYPE_UUID;
-    partition_entry_t *part;
+    struct efi_guid_t metadata_uuid = FWU_METADATA_TYPE_UUID;
+    struct partition_entry_t part;
 
     FWU_LOG_FUNC_ENTER;
 
@@ -568,24 +599,32 @@ static psa_status_t metadata_read(struct fwu_metadata *metadata, uint8_t replica
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
-    if (replica_num == 1) {
-        part = get_partition_entry_by_type(&metadata_uuid);
-    } else if (replica_num == 2) {
-        part = get_partition_replica_by_type(&metadata_uuid);
-    } else {
+    psa_status_t ret;
+    switch (replica_num) {
+    case 1:
+    case 2:
+        ret = gpt_entry_read_by_type(&metadata_uuid, replica_num - 1, &part);
+        break;
+    default:
         FWU_LOG_MSG("%s: replica_num must be 1 or 2\n\r", __func__);
         return PSA_ERROR_GENERIC_ERROR;
     }
 
-    if (!part) {
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
         FWU_LOG_MSG("%s: FWU metadata partition not found\n\r", __func__);
-        return PSA_ERROR_GENERIC_ERROR;
+        return ret;
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        FWU_LOG_MSG("%s: ERROR - flash failure reading private metadata\n\r", __func__);
+        return ret;
+    } else if (ret < 0) {
+        FWU_LOG_MSG("%s: Unable to find FWU partition, ret: %d\n\r", __func__, ret);
+        return ret;
     }
 
     FWU_LOG_MSG("%s: enter: flash addr = %u, size = %d\n\r", __func__,
-                  part->start, sizeof(*metadata));
+                  part.start * TFM_GPT_BLOCK_SIZE, sizeof(*metadata));
 
-    int ret = FWU_METADATA_FLASH_DEV.ReadData(part->start,
+    ret = FWU_METADATA_FLASH_DEV.ReadData(part.start * TFM_GPT_BLOCK_SIZE,
                                 metadata, sizeof(*metadata));
     if (ret < 0) {
         FWU_LOG_MSG("%s: ERROR - Flash read failed (ret = %d)\n\r", __func__, ret);
@@ -663,8 +702,8 @@ static psa_status_t metadata_write(
 static psa_status_t metadata_write(
                         struct fwu_metadata *metadata, uint8_t replica_num)
 {
-    uuid_t metadata_uuid = FWU_METADATA_TYPE_UUID;
-    partition_entry_t *part;
+    struct efi_guid_t metadata_uuid = FWU_METADATA_TYPE_UUID;
+    struct partition_entry_t part;
 
     FWU_LOG_FUNC_ENTER;
 
@@ -673,30 +712,38 @@ static psa_status_t metadata_write(
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
-    if (replica_num == 1) {
-        part = get_partition_entry_by_type(&metadata_uuid);
-    } else if (replica_num == 2) {
-        part = get_partition_replica_by_type(&metadata_uuid);
-    } else {
+    psa_status_t ret;
+    switch (replica_num) {
+    case 1:
+    case 2:
+        ret = gpt_entry_read_by_type(&metadata_uuid, replica_num - 1, &part);
+        break;
+    default:
         FWU_LOG_MSG("%s: replica_num must be 1 or 2\n\r", __func__);
         return PSA_ERROR_GENERIC_ERROR;
     }
 
-    if (!part) {
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
         FWU_LOG_MSG("%s: FWU metadata partition not found\n\r", __func__);
-        return PSA_ERROR_GENERIC_ERROR;
+        return ret;
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        FWU_LOG_MSG("%s: ERROR - flash failure reading private metadata\n\r", __func__);
+        return PSA_ERROR_STORAGE_FAILURE;
+    } else if (ret < 0) {
+        FWU_LOG_MSG("%s: Unable to find FWU partition, ret: %d\n\r", __func__, ret);
+        return ret;
     }
 
     FWU_LOG_MSG("%s: enter: flash addr = %u, size = %d\n\r", __func__,
-                  part->start, sizeof(*metadata));
+                  part.start * TFM_GPT_BLOCK_SIZE, sizeof(*metadata));
 
-    int ret = FWU_METADATA_FLASH_DEV.EraseSector(part->start);
+    ret = FWU_METADATA_FLASH_DEV.EraseSector(part.start * TFM_GPT_BLOCK_SIZE);
     if (ret != ARM_DRIVER_OK) {
         FWU_LOG_MSG("%s: ERROR - Flash erase failed (ret = %d)\n\r", __func__, ret);
         return PSA_ERROR_STORAGE_FAILURE;
     }
 
-    ret = FWU_METADATA_FLASH_DEV.ProgramData(part->start,
+    ret = FWU_METADATA_FLASH_DEV.ProgramData(part.start * TFM_GPT_BLOCK_SIZE,
                                 metadata, sizeof(*metadata));
     if (ret < 0) {
         FWU_LOG_MSG("%s: ERROR - Flash write failed (ret = %d)\n\r", __func__, ret);
@@ -733,8 +780,41 @@ static psa_status_t metadata_write_both_replica(
     return PSA_SUCCESS;
 }
 
+#ifndef BL1_BUILD
+/* Ensure both GPT headers are valid */
+psa_status_t ensure_gpt_headers_valid(void)
+{
+    psa_status_t ret = gpt_validate(true);
+    if (ret == PSA_ERROR_INVALID_SIGNATURE) {
+        ret = gpt_restore(true);
+        if (ret == PSA_ERROR_INVALID_SIGNATURE) {
+            FWU_LOG_MSG("Invalid primary GPT\r\n");
+            return ret;
+        }
+    }
+
+    ret = gpt_validate(false);
+    if (ret == PSA_ERROR_INVALID_SIGNATURE) {
+        ret = gpt_restore(false);
+        if (ret == PSA_ERROR_INVALID_SIGNATURE) {
+            FWU_LOG_MSG("Invalid primary GPT\r\n");
+            return ret;
+        }
+    }
+
+    return PSA_SUCCESS;
+}
+#endif /* BL1_BUILD */
+
 psa_status_t fwu_metadata_check_and_correct_integrity(void)
 {
+#ifndef BL1_BUILD
+    psa_status_t ret = ensure_gpt_headers_valid();
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+#endif
+
     psa_status_t ret_replica_1 = PSA_ERROR_GENERIC_ERROR;
     psa_status_t ret_replica_2 = PSA_ERROR_GENERIC_ERROR;
 
@@ -764,10 +844,18 @@ psa_status_t fwu_metadata_init(void)
         return PSA_SUCCESS;
     }
 
-    #ifndef BL1_BUILD
+#ifndef BL1_BUILD
     plat_io_storage_init();
-    partition_init(PLATFORM_GPT_IMAGE);
-    #endif
+    ret = gpt_init(&io_gpt_flash_driver, PLAT_MAX_PARTITION_ENTRIES);
+    if (ret < 0) {
+        return ret;
+    }
+
+    ret = ensure_gpt_headers_valid();
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
+#endif
 
     /* Code assumes everything fits into a sector */
     if (sizeof(struct fwu_metadata) > FWU_METADATA_FLASH_SECTOR_SIZE) {
@@ -830,17 +918,19 @@ static psa_status_t fwu_metadata_configure(void)
 
         _metadata.fw_desc.img_entry[i].img_props[BANK_0].accepted = IMAGE_ACCEPTED;
         _metadata.fw_desc.img_entry[i].img_props[BANK_0].version = image_version;
-        memcpy(&(_metadata.fw_desc.img_entry[i].img_props[BANK_0].img_uuid), (const void *)&fwu_image[i].image_guid, sizeof(struct efi_guid));
+        memcpy(&(_metadata.fw_desc.img_entry[i].img_props[BANK_0].img_uuid), (const void *)&fwu_image[i].image_type, sizeof(struct efi_guid_t));
 
         _metadata.fw_desc.img_entry[i].img_props[BANK_1].accepted = INVALID_IMAGE;
         _metadata.fw_desc.img_entry[i].img_props[BANK_1].version = INVALID_VERSION;
-        memcpy(&(_metadata.fw_desc.img_entry[i].img_props[BANK_1].img_uuid), (const void *)&fwu_image[i].image_guid, sizeof(struct efi_guid));
+        memcpy(&(_metadata.fw_desc.img_entry[i].img_props[BANK_1].img_uuid), (const void *)&fwu_image[i].image_type, sizeof(struct efi_guid_t));
     }
 
     /* Calculate CRC32 for fwu metadata. The first filed in the _metadata has to be the crc_32.
      * This should be omited from the calculation. */
-    _metadata.crc_32 = crc32((uint8_t *)&_metadata.version,
-                             sizeof(struct fwu_metadata) - sizeof(uint32_t));
+    _metadata.crc_32 = efi_soft_crc32_update(
+            0,
+            (uint8_t *)&_metadata.version,
+            sizeof(struct fwu_metadata) - sizeof(uint32_t));
 
     ret = metadata_write_both_replica(&_metadata);
     if (ret) {
@@ -1045,8 +1135,10 @@ static psa_status_t fwu_select_previous(
     if (ret) {
         return ret;
     }
-    metadata->crc_32 = crc32((uint8_t *)&metadata->version,
-                              sizeof(struct fwu_metadata) - sizeof(uint32_t));
+    metadata->crc_32 = efi_soft_crc32_update(
+            0,
+            (uint8_t *)&metadata->version,
+            sizeof(struct fwu_metadata) - sizeof(uint32_t));
 
     ret = metadata_write_both_replica(metadata);
     if (ret) {
@@ -1243,7 +1335,7 @@ psa_status_t corstone1000_fwu_host_ack(void)
         ret = PSA_SUCCESS; /* nothing to be done */
 
         for (int i = 0; i < NR_OF_IMAGES_IN_FW_BANK; i++) {
-                fmp_set_image_info(&fwu_image[i].image_guid,
+                fmp_set_image_info(&fwu_image[i].image_type,
                         priv_metadata.fmp_version[i],
                         priv_metadata.fmp_last_attempt_version[i],
                         priv_metadata.fmp_last_attempt_status[i]);
@@ -1274,7 +1366,7 @@ psa_status_t corstone1000_fwu_host_ack(void)
     if (ret == PSA_SUCCESS) {
         disable_host_ack_timer();
         for (int i = 0; i < NR_OF_IMAGES_IN_FW_BANK; i++) {
-            fmp_set_image_info(&fwu_image[i].image_guid,
+            fmp_set_image_info(&fwu_image[i].image_type,
                     priv_metadata.fmp_version[i],
                     priv_metadata.fmp_last_attempt_version[i],
                     priv_metadata.fmp_last_attempt_status[i]);
@@ -1428,7 +1520,7 @@ static psa_status_t get_esrt_data(struct fwu_esrt_data_wrapper *esrt)
 
     for (int i = 0; i < NR_OF_IMAGES_IN_FW_BANK; i++)
     {
-        memcpy(&esrt->entries[i].fw_class, &fwu_image[i].image_guid, sizeof(struct efi_guid));
+        memcpy(&esrt->entries[i].fw_class, &fwu_image[i].image_type, sizeof(struct efi_guid_t));
         esrt->entries[i].fw_version = priv_metadata.fmp_version[i];
         esrt->entries[i].lowest_supported_fw_version = FWU_IMAGE_INITIAL_VERSION;
         esrt->entries[i].last_attempt_version = priv_metadata.fmp_last_attempt_version[i];
@@ -1492,8 +1584,10 @@ static psa_status_t fwu_accept_image(struct fwu_metadata *metadata,
     if (ret) {
         return ret;
     }
-    metadata->crc_32 = crc32((uint8_t *)&metadata->version,
-                              sizeof(struct fwu_metadata) - sizeof(uint32_t));
+    metadata->crc_32 = efi_soft_crc32_update(
+            0,
+            (uint8_t *)&metadata->version,
+            sizeof(struct fwu_metadata) - sizeof(uint32_t));
 
     ret = metadata_write_both_replica(metadata);
     if (ret) {
@@ -1659,9 +1753,7 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
     psa_status_t ret;
     int drv_ret;
     int image_index;
-    uint32_t bank_offset;
     uint32_t active_index;
-    uint32_t previous_active_index;
     uint32_t nr_images;
     uint32_t current_state;
     uint32_t image_offset;
@@ -1718,7 +1810,7 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
         priv_metadata.fmp_last_attempt_status[fwu_image_index] = LAST_ATTEMPT_STATUS_ERROR_UNSUCCESSFUL;
         private_metadata_write(&priv_metadata);
 
-        fmp_set_image_info(&fwu_image[fwu_image_index].image_guid,
+        fmp_set_image_info(&fwu_image[fwu_image_index].image_type,
                 priv_metadata.fmp_version[fwu_image_index],
                 priv_metadata.fmp_last_attempt_version[fwu_image_index],
                 priv_metadata.fmp_last_attempt_status[fwu_image_index]);
@@ -1728,11 +1820,11 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
         goto out;
     }
 
+#ifdef BL1_BUILD
+    uint32_t bank_offset;
     if (active_index == BANK_0) {
-        previous_active_index = BANK_1;
         bank_offset = BANK_1_PARTITION_OFFSET;
     } else if (active_index == BANK_1) {
-        previous_active_index = BANK_0;
         bank_offset = BANK_0_PARTITION_OFFSET;
     } else {
         FWU_LOG_MSG("ERROR: %s: active_index %d\n\r",__func__,active_index);
@@ -1741,6 +1833,38 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
     }
 
     image_offset = bank_offset + fwu_image[fwu_image_index].image_offset;
+#else
+    uint32_t previous_active_index;
+    struct partition_entry_t part;
+
+    if (active_index == BANK_0) {
+        previous_active_index = BANK_1;
+    } else if (active_index == BANK_1) {
+        previous_active_index = BANK_0;
+    } else {
+        FWU_LOG_MSG("ERROR: %s: active_index %d\n\r",__func__,active_index);
+        ret = PSA_ERROR_DATA_INVALID;
+        goto out;
+    }
+
+    ret = gpt_entry_read_by_type(&(fwu_image[fwu_image_index].image_type), 1, &part);
+
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
+        FWU_LOG_MSG("%s: Partition '%s' not found\n\r",
+                __func__, fwu_image[fwu_image_index].image_names[previous_active_index]);
+        goto out;
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        FWU_LOG_MSG("%s : ERROR - flash failure reading partition '%s'\n\r",
+                __func__, fwu_image[fwu_image_index].image_names[previous_active_index]);
+        goto out;
+    } else if (ret < 0) {
+        FWU_LOG_MSG("Unable to find partition '%s', ret: %d\n\r",
+                fwu_image[fwu_image_index].image_names[previous_active_index], ret);
+        goto out;
+    }
+
+    image_offset = part.start * TFM_GPT_BLOCK_SIZE;
+#endif /* BL1_BUILD */
 
     /* Firmware update process can only start in regular state. */
     current_state = get_fwu_image_state(&_metadata, &priv_metadata, fwu_image_index);
@@ -1763,7 +1887,7 @@ psa_status_t fwu_bootloader_load_image(psa_fwu_component_t component,
 
         private_metadata_write(&priv_metadata);
 
-        fmp_set_image_info(&fwu_image[fwu_image_index].image_guid,
+        fmp_set_image_info(&fwu_image[fwu_image_index].image_type,
                 priv_metadata.fmp_version[fwu_image_index],
                 priv_metadata.fmp_last_attempt_version[fwu_image_index],
                 priv_metadata.fmp_last_attempt_status[fwu_image_index]);
@@ -1832,8 +1956,10 @@ static psa_status_t fwu_update_metadata(const psa_fwu_component_t *candidates, u
         _metadata.fw_desc.img_entry[fwu_image_index].img_props[previous_active_index].version = fmp_header_image_info[fwu_image_index].fmp_hdr.fw_version;
     }
 
-    _metadata.crc_32 = crc32((uint8_t *)&_metadata.version,
-                              sizeof(struct fwu_metadata) - sizeof(uint32_t));
+    _metadata.crc_32 = efi_soft_crc32_update(
+            0,
+            (uint8_t *)&_metadata.version,
+            sizeof(struct fwu_metadata) - sizeof(uint32_t));
 
     ret = metadata_write_both_replica(&_metadata);
     if (ret) {
@@ -1964,8 +2090,10 @@ static psa_status_t maintain_bank_consistency(void)
             goto out;
         }
 
-        _metadata.crc_32 = crc32((uint8_t *)&_metadata.version,
-                                  sizeof(struct fwu_metadata) - sizeof(uint32_t));
+        _metadata.crc_32 = efi_soft_crc32_update(
+                0,
+                (uint8_t *)&_metadata.version,
+                sizeof(struct fwu_metadata) - sizeof(uint32_t));
 
         ret = metadata_write_both_replica(&_metadata);
         if (ret) {
@@ -2061,7 +2189,7 @@ psa_status_t fwu_bootloader_mark_image_accepted(const psa_fwu_component_t *trial
 
         current_state = get_fwu_image_state(&_metadata, &priv_metadata, fwu_image_index);
         if (current_state == PSA_FWU_READY) {
-            fmp_set_image_info(&fwu_image[fwu_image_index].image_guid,
+            fmp_set_image_info(&fwu_image[fwu_image_index].image_type,
                     priv_metadata.fmp_version[fwu_image_index],
                     priv_metadata.fmp_last_attempt_version[fwu_image_index],
                     priv_metadata.fmp_last_attempt_status[fwu_image_index]);
@@ -2095,7 +2223,7 @@ psa_status_t fwu_bootloader_mark_image_accepted(const psa_fwu_component_t *trial
             }
 
             fwu_image_index = trials[i] - FWU_FAKE_IMAGES_INDEX_COUNT;
-            fmp_set_image_info(&fwu_image[fwu_image_index].image_guid,
+            fmp_set_image_info(&fwu_image[fwu_image_index].image_type,
                     priv_metadata.fmp_version[fwu_image_index],
                     priv_metadata.fmp_last_attempt_version[fwu_image_index],
                     priv_metadata.fmp_last_attempt_status[fwu_image_index]);
@@ -2111,7 +2239,6 @@ out:
 /* Reject the staged image. */
 psa_status_t fwu_bootloader_reject_staged_image(psa_fwu_component_t component)
 {
-
     if (!is_image_index_valid(component)) {
         FWU_LOG_MSG("%s: Invalid image index received \n\r", __func__);
         return PSA_ERROR_INVALID_ARGUMENT;
@@ -2227,7 +2354,6 @@ psa_status_t fwu_bootloader_get_image_info(psa_fwu_component_t component,
     psa_status_t ret;
 
     FWU_LOG_FUNC_ENTER;
-
 
     Select_Write_Mode_For_Shared_Flash();
     if (private_metadata_read(&priv_metadata)) {

@@ -5,6 +5,7 @@
  *
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include "tfm_hal_device_header.h"
@@ -32,8 +33,8 @@
 #include "crypto_hw.h"
 #endif
 
-#include "efi.h"
-#include "partition.h"
+#include "gpt.h"
+#include "io_gpt.h"
 #include "platform.h"
 
 static const char* const tfm_part_names[] = {"tfm_primary", "tfm_secondary"};
@@ -49,6 +50,14 @@ REGION_DECLARE(Image$$, ARM_LIB_HEAP, $$ZI$$Limit)[];
 
 extern struct flash_area flash_map[];
 
+static void ascii_to_unicode(const char *ascii, char *unicode)
+{
+    for (int i = 0; i < strlen(ascii) + 1; ++i) {
+        unicode[i << 1] = ascii[i];
+        unicode[(i << 1) + 1] = '\0';
+    }
+}
+
 static bool fill_flash_map_with_tfm_data(uint8_t boot_index) {
 
     if (boot_index >= ARRAY_SIZE(tfm_part_names)) {
@@ -56,14 +65,28 @@ static bool fill_flash_map_with_tfm_data(uint8_t boot_index) {
                      boot_index, ARRAY_SIZE(tfm_part_names));
         return false;
     }
-    const partition_entry_t *tfm_entry =
-        get_partition_entry(tfm_part_names[boot_index]);
-    if (tfm_entry == NULL) {
+
+    /* Convert ascii to unicode so GPT library understands */
+    char unicode_name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    ascii_to_unicode(tfm_part_names[boot_index], unicode_name);
+    struct partition_entry_t tfm_entry;
+    psa_status_t ret = gpt_entry_read_by_name(
+            unicode_name,
+            0,
+            &tfm_entry);
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
+        BOOT_LOG_ERR("Could not find partition %s", tfm_part_names[boot_index]);
+        return false;
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        BOOT_LOG_ERR("%s: I/O error occurred with flash device", __func__);
+        return false;
+    } else if (ret < 0) {
         BOOT_LOG_ERR("Could not find partition %s", tfm_part_names[boot_index]);
         return false;
     }
-    flash_map[0].fa_off = tfm_entry->start;
-    flash_map[0].fa_size = tfm_entry->length;
+
+    flash_map[0].fa_off = tfm_entry.start * TFM_GPT_BLOCK_SIZE;
+    flash_map[0].fa_size = tfm_entry.size * TFM_GPT_BLOCK_SIZE;
     return true;
 }
 
@@ -80,15 +103,27 @@ static bool fill_flash_map_with_fip_data(uint8_t boot_index) {
                      boot_index, ARRAY_SIZE(fip_part_names));
         return false;
     }
-    const partition_entry_t *fip_entry =
-        get_partition_entry(fip_part_names[boot_index]);
-    if (fip_entry == NULL) {
+
+    struct partition_entry_t fip_entry;
+    char unicode_name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+    ascii_to_unicode(fip_part_names[boot_index], unicode_name);
+    psa_status_t ret = gpt_entry_read_by_name(
+            unicode_name,
+            0,
+            &fip_entry);
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
+        BOOT_LOG_ERR("Could not find partition %s", fip_part_names[boot_index]);
+        return false;
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        BOOT_LOG_ERR("%s: I/O error occurred with flash device", __func__);
+        return false;
+    } else if (ret < 0) {
         BOOT_LOG_ERR("Could not find partition %s", fip_part_names[boot_index]);
         return false;
     }
 
-    fip_offset = fip_entry->start;
-    fip_size = fip_entry->length;
+    fip_offset = fip_entry.start * TFM_GPT_BLOCK_SIZE;
+    fip_size = fip_entry.size * TFM_GPT_BLOCK_SIZE;
 
     /* parse directly from flash using XIP mode */
     /* FIP is large so its not a good idea to load it in memory */
@@ -130,20 +165,21 @@ int32_t boot_platform_init(void)
     }
 
     plat_io_storage_init();
-    partition_init(PLATFORM_GPT_IMAGE);
+    gpt_init(&io_gpt_flash_driver, PLAT_GPT_MAX_PARTITIONS);
 
     boot_index = bl2_get_boot_bank();
 
+    result = 0;
     if (!fill_flash_map_with_tfm_data(boot_index)
 #ifndef TFM_S_REG_TEST
     || !fill_flash_map_with_fip_data(boot_index)
 #endif
     ) {
         BOOT_LOG_ERR("Filling flash map has failed!");
-        return 1;
+        result = 1;
     }
 
-    return 0;
+    return result;
 }
 
 int32_t boot_platform_post_init(void)
@@ -223,5 +259,6 @@ void boot_platform_start_next_image(struct boot_arm_vector_table *vt)
     __DSB();
     __ISB();
 
+    gpt_uninit();
     boot_jump_to_next_image(vt_cpy->reset);
 }

@@ -11,7 +11,6 @@
 
 #include <stdint.h>
 #include "fwu_agent.h"
-#include "../fip_parser/external/uuid.h"
 
 /*
  * Last Attempt Status Value
@@ -40,7 +39,7 @@
  * attempt_version: attempted versions for the image
  *
  */
-psa_status_t fmp_set_image_info(struct efi_guid *guid,
+psa_status_t fmp_set_image_info(const struct efi_guid_t *guid,
                      uint32_t current_version, uint32_t attempt_version,
                      uint32_t last_attempt_status);
 

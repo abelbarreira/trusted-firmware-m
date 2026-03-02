@@ -9,7 +9,8 @@
 #define FWU_AGENT_H
 
 #include "psa/error.h"
-#include "../fip_parser/external/uuid.h"
+#include "efi_guid_structs.h"
+#include "gpt.h"
 
 #ifdef ENABLE_FWU_AGENT_DEBUG_LOGS
     #include "tfm_log.h"
@@ -28,6 +29,9 @@
 /* Version used for the very first image of the device. */
 #define FWU_IMAGE_INITIAL_VERSION 0
 
+/* Maximum ascii name length of image */
+#define FWU_IMAGE_NAME_LENGTH (GPT_ENTRY_NAME_LENGTH >> 1)
+
 #define EFI_SYSTEM_RESOURCE_TABLE_FIRMWARE_RESOURCE_VERSION  1
 typedef struct {
     uint32_t signature;
@@ -42,21 +46,24 @@ typedef struct {
     size_t image_size_recvd;
 } __packed fmp_header_image_info_t;
 
-/* Store image information common for both the banks */
+/* Image information common for both the banks */
 typedef struct {
     /* Total size of the image */
     uint32_t image_size;
 
-    /* Offset of image within a bank */
+    /* Offset of image within a bank. */
     uint32_t image_offset;
 
-    /* Image GUID */
-    struct efi_guid image_guid;
-} __packed fwu_bank_image_info_t;
+    /* Name of the image in ascii */
+    char image_name[FWU_IMAGE_NAME_LENGTH];
+
+    /* Image-type GUID */
+    struct efi_guid_t image_type;
+} fwu_image_info_t;
 
 /* ESRT v1 */
 struct __attribute__((__packed__)) efi_system_resource_entry {
-    struct   efi_guid fw_class;
+    struct   efi_guid_t fw_class;
     uint32_t fw_type;
     uint32_t fw_version;
     uint32_t lowest_supported_fw_version;

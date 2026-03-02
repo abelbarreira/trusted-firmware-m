@@ -10,6 +10,7 @@
 #include "tfm_hal_device_header.h"
 #include "uefi_fmp.h"
 #include "flash_layout.h"
+#include "efi_guid_structs.h"
 
 /* The count will increase when partial update is supported.
  * At present, only full WIC is considered as updatable image.
@@ -45,7 +46,7 @@ typedef uint8_t DescriptorCount_t;
 
 typedef __PACKED_STRUCT {
     uint8_t ImageIndex;
-    struct efi_guid ImageTypeId;
+    struct efi_guid_t ImageTypeId;
     uint64_t ImageId;
     uefi_ptr_t PtrImageIdName;
     uint32_t Version;
@@ -101,7 +102,7 @@ struct corstone_image_info image_info[NUMBER_OF_FMP_IMAGES] = {
 };
 static EFI_FIRMWARE_MANAGEMENT_PROTOCOL_IMAGE_INFO fmp_info[NUMBER_OF_FMP_IMAGES];
 
-extern fwu_bank_image_info_t fwu_image[];
+extern const fwu_image_info_t fwu_image[];
 
 static bool is_fmp_info_initialized = false;
 
@@ -127,8 +128,8 @@ static void init_fmp_info(void)
 
         fmp_info[i].ImageDescriptor.ImageIndex = i+1;
 
-        memcpy(&fmp_info[i].ImageDescriptor.ImageTypeId, &fwu_image[i].image_guid,
-                sizeof(struct efi_guid));
+        memcpy(&fmp_info[i].ImageDescriptor.ImageTypeId, &fwu_image[i].image_type,
+                sizeof(struct efi_guid_t));
 
         fmp_info[i].ImageDescriptor.ImageId = i+1;
         fmp_info[i].ImageDescriptor.Version = FWU_IMAGE_INITIAL_VERSION;
@@ -150,7 +151,7 @@ static void init_fmp_info(void)
     return;
 }
 
-psa_status_t fmp_set_image_info(struct efi_guid *guid,
+psa_status_t fmp_set_image_info(const struct efi_guid_t *guid,
                      uint32_t current_version, uint32_t attempt_version,
                      uint32_t last_attempt_status)
 {
@@ -164,7 +165,7 @@ psa_status_t fmp_set_image_info(struct efi_guid *guid,
 
     for (int i = 0; i < NUMBER_OF_FMP_IMAGES; i++) {
         if ((memcmp(guid, &fmp_info[i].ImageDescriptor.ImageTypeId,
-                        sizeof(struct efi_guid))) == 0)
+                        sizeof(struct efi_guid_t))) == 0)
         {
             FWU_LOG_MSG("FMP image update: image id = %u\n\r",
                                     fmp_info[i].ImageDescriptor.ImageId);
