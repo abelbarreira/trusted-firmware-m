@@ -5,11 +5,25 @@
 #
 #-------------------------------------------------------------------------------
 
-set(CC3XX_TARGET_NAME ${CC3XX_TARGET_PREFIX}cc3xx)
+cmake_minimum_required(VERSION 3.21)
 
-add_subdirectory(low_level_driver)
-add_subdirectory(psa_driver_api)
+include(FetchContent)
+set(FETCHCONTENT_QUIET FALSE)
 
-if (TEST_CC3XX)
-    add_subdirectory(tests)
-endif()
+# Default configuration of cc3xx repository
+set(PSA_CRYPTO_DRIVER_PATH DOWNLOAD  CACHE PATH   "Path to cc3xx Crypto driver (or DOWNLOAD to fetch automatically")
+set(PSA_CRYPTO_DRIVER_NAME vendor/arm/cc3xx CACHE STRING "PSA Crypto driver name")
+
+fetch_remote_library(
+    LIB_NAME                cc3xx
+    LIB_SOURCE_PATH_VAR     PSA_CRYPTO_DRIVER_PATH
+    LIB_PATCH_DIR           ${CMAKE_CURRENT_LIST_DIR}
+    LIB_BASE_DIR            "${CMAKE_BINARY_DIR}/driver"
+    FETCH_CONTENT_ARGS
+        GIT_REPOSITORY      https://git.trustedfirmware.org/shared/tf-psa-crypto-drivers
+        GIT_TAG             main
+        GIT_SHALLOW         TRUE
+        GIT_PROGRESS        TRUE
+)
+
+set(CC3XX_DRIVER_PATH ${PSA_CRYPTO_DRIVER_PATH}/${PSA_CRYPTO_DRIVER_NAME} CACHE PATH "CC3XX Crypto driver path")

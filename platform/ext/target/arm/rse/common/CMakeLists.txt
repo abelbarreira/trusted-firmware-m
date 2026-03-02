@@ -175,6 +175,9 @@ if (RSE_BL1_TEST_BINARY)
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/tests/rse_test_executable rse_test_executable)
 endif()
 
+# Fetch PSA Crypto drivers from external repository
+add_subdirectory(${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx cc3xx-src)
+
 # Set which PLATFORM dependency must be used by the CC3XX driver
 set(CC3XX_PLATFORM_INTERFACE platform_bl1_1)
 set(CC3XX_TARGET_PREFIX bl1_)
@@ -185,7 +188,7 @@ set(CC3XX_TARGET_PREFIX bl1_)
 # of the specified build option
 set(SAVED_BUILD_TYPE ${CMAKE_BUILD_TYPE})
 set(CMAKE_BUILD_TYPE "RelWithDebInfo")
-add_subdirectory(${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx cc3xx)
+add_subdirectory(${CC3XX_DRIVER_PATH} cc3xx)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/psa bl1_psa_crypto)
 set(CMAKE_BUILD_TYPE ${SAVED_BUILD_TYPE})
 
@@ -222,8 +225,8 @@ target_include_directories(platform_s
         ./bringup_helpers
         ./cc3xx
         ./runtime/cc3xx
-        ${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx/low_level_driver/include
-        ${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx/common
+        ${CC3XX_DRIVER_PATH}/low_level_driver/include
+        ${CC3XX_DRIVER_PATH}/cc3xx/common
         soft_crc
         ${PLATFORM_DIR}/ext/target/arm/drivers/dcsu/include
         ${PLATFORM_DIR}/ext/target/arm/drivers/dcsu/default_config
@@ -630,8 +633,8 @@ target_include_directories(platform_bl1_1_interface
         ${PLATFORM_DIR}/ext/target/arm/drivers/dma/dma350
         ${PLATFORM_DIR}/ext/target/arm/drivers/kmu
         ${PLATFORM_DIR}/ext/target/arm/drivers/lcm
-        ${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx/low_level_driver/include
-        ${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx/common
+        ${CC3XX_DRIVER_PATH}/low_level_driver/include
+        ${CC3XX_DRIVER_PATH}/common
         ${PLATFORM_DIR}/ext/target/arm/drivers/gpio/pl061
         ${PLATFORM_DIR}/ext/target/arm/drivers/dcsu/include
         ${PLATFORM_DIR}/ext/target/arm/drivers/dcsu/default_config
@@ -1138,7 +1141,7 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/config/error_codes_mapping
             ${CMAKE_CURRENT_SOURCE_DIR}/../../rse/common/native_drivers/atu_rse_drv.h:atu_error_t
             ${CMAKE_CURRENT_SOURCE_DIR}/../../rse/common/native_drivers/integrity_checker_drv.h:integrity_checker_error_t
             ${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/dcsu/include/dcsu_drv.h:dcsu_error_t
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/cc3xx/common/cc3xx_error.h:cc3xx_error
+            ${CC3XX_DRIVER_PATH}/common/cc3xx_error.h:cc3xx_error
 )
 
 install(FILES       ${CMAKE_CURRENT_BINARY_DIR}/config/error_codes_mapping.csv

@@ -15,8 +15,8 @@ target_compile_definitions(bl1_1_psa_crypto_interface
 
 target_include_directories(bl1_1_psa_crypto_interface
     INTERFACE
-        ${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx/psa_driver_api
-        ${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx/psa_driver_api/include
+        ${CC3XX_DRIVER_PATH}/psa_driver_api
+        ${CC3XX_DRIVER_PATH}/psa_driver_api/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../cc3xx/opaque-keys
         # Workaround: needed for private headers in drivers/builtin/include/mbedtls/private
         # which are included by some of the TF-PSA-Crypto interface headers.

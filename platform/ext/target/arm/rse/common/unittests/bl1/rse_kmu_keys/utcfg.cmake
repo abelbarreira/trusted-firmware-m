@@ -7,7 +7,7 @@
 
 set(PLATFORM_DIR ${TFM_ROOT_DIR}/platform)
 set(RSE_COMMON_SOURCE_DIR ${PLATFORM_DIR}/ext/target/arm/rse/common)
-set(CC3XX_SOURCE_DIR ${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx)
+set(CC3XX_SOURCE_DIR ${CC3XX_DRIVER_PATH})
 
 #-------------------------------------------------------------------------------
 # Unit under test

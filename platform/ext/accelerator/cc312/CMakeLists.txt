@@ -19,7 +19,7 @@ endif()
 # The config files need to access crypto accelerator configurations.
 target_include_directories(psa_crypto_library_config
     INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        .
 )
 
 # CC log level is controlled indirectly through the SP log level. When SP log is
@@ -30,6 +30,9 @@ if(${TFM_PARTITION_LOG_LEVEL} STREQUAL LOG_LEVEL_NONE)
 else()
     set(CC_LOG_ENABLED $<CONFIG:Debug,relwithdebinfo>)
 endif()
+
+# Fetch PSA Crypto drivers from external repository
+add_subdirectory(${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx cc3xx-src)
 
 ################################ BL2 ###########################################
 
@@ -46,7 +49,7 @@ if (BL2)
     set(CC3XX_TARGET_PREFIX bl2_)
     set(SAVED_BUILD_TYPE ${CMAKE_BUILD_TYPE})
     set(CMAKE_BUILD_TYPE ${TF_PSA_CRYPTO_BUILD_TYPE})
-    add_subdirectory(${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx ${CMAKE_CURRENT_BINARY_DIR}/${CC3XX_TARGET_PREFIX}cc3xx)
+    add_subdirectory(${CC3XX_DRIVER_PATH} ${CC3XX_TARGET_PREFIX}cc3xx)
     set(CMAKE_BUILD_TYPE ${SAVED_BUILD_TYPE})
 
     target_link_libraries(bl2_crypto
@@ -56,7 +59,7 @@ if (BL2)
 
     target_include_directories(bl2_crypto_config
         INTERFACE
-            ${CMAKE_CURRENT_SOURCE_DIR}
+            .
     )
 
     target_link_libraries(${CC3XX_TARGET_PREFIX}cc3xx_psa_driver_api
@@ -102,7 +105,7 @@ if (TFM_PARTITION_CRYPTO)
         set(CC312_DRIVER_API_TARGET ${CC3XX_TARGET_PREFIX}cc3xx_psa_driver_api)
         set(CC3XX_PLATFORM_INTERFACE platform_s)
 
-        add_subdirectory(${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx ${CMAKE_CURRENT_BINARY_DIR}/${CC3XX_TARGET_PREFIX}cc3xx)
+        add_subdirectory(${CC3XX_DRIVER_PATH} ${CC3XX_TARGET_PREFIX}cc3xx)
 
         target_sources(crypto_service_crypto_hw
             PRIVATE
@@ -121,12 +124,12 @@ if (TFM_PARTITION_CRYPTO)
         target_sources(crypto_service_crypto_hw
             PRIVATE
                 cc312.c
-                $<$<BOOL:${CC_LOG_ENABLED}>:${CMAKE_CURRENT_SOURCE_DIR}/cc312_log.c>
+                $<$<BOOL:${CC_LOG_ENABLED}>:cc312_log.c>
         )
 
         target_include_directories(crypto_service_crypto_hw
             PUBLIC
-                ${CMAKE_CURRENT_SOURCE_DIR}
+                .
         )
 
         target_link_libraries(crypto_service_crypto_hw
@@ -147,7 +150,7 @@ if (TFM_PARTITION_CRYPTO)
 
         target_sources(${CC312_LIB_PREFIX}cc312
             PRIVATE
-                $<$<BOOL:${CC_LOG_ENABLED}>:${CMAKE_CURRENT_SOURCE_DIR}/cc312_log.c>
+                $<$<BOOL:${CC_LOG_ENABLED}>:cc312_log.c>
         )
 
         target_compile_options(${CC312_LIB_PREFIX}cc312
