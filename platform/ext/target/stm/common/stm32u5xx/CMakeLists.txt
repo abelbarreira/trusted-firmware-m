@@ -223,6 +223,23 @@ if(BL2)
             ${STM_COMMON_DIR}/hal/Native_Driver/nv_counters.c
     )
 
+
+    # Add sources TF-PSA-Crypto for BL2
+    target_sources(bl2
+        PRIVATE
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/constant_time.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher_wrap.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_cipher.c
+    )
+
+
+    # for BL2 Crypto: provide mbedtls_psa_external_get_random()
+    target_sources(bl2_crypto
+        PRIVATE
+            ${STM_COMMON_DIR}/hal/accelerator/rng.c
+    )
+
     target_compile_options(platform_bl2
         PUBLIC
             ${COMPILER_CMSE_FLAG}

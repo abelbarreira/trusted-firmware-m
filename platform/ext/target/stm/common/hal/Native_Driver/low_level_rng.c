@@ -82,7 +82,7 @@ int RNG_Init(void)
   return 0;
 }
 
-static void RNG_GetBytes(uint8_t *output, size_t length, size_t *output_length)
+void RNG_GetBytes(uint8_t *output, size_t length, size_t *output_length)
 {
   int32_t ret = 0;
   uint8_t try = 0;
@@ -131,14 +131,3 @@ void RNG_DeInit(void)
   users = 0;
 }
 
-
-/*  interface for mbed-crypto */
-int mbedtls_hardware_poll(void *data, unsigned char *output, size_t len, size_t *olen)
-{
-  RNG_GetBytes(output, len, olen);
-  if (*olen != len)
-  {
-    return -1;
-  }
-  return 0;
-}

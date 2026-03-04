@@ -579,13 +579,17 @@ static int32_t Flash_ProgramData(uint32_t addr,
   do
   {
 #if FLASH0_PROG_UNIT == 0x8
-    /* dword api*/
-    uint64_t dword;
-    memcpy(&dword, (void *)((uint32_t)data + loop), sizeof(dword));
-    if (dword != -1)
-        err = HAL_FLASH_Program(write_type, (flash_base + addr), dword);
+    /* doubleword api*/
+    uint32_t dword[2];
+    memcpy(dword, (void *)((uint32_t)data + loop), sizeof(dword));
+    if ((dword[0] != -1) || (dword[1] != -1))
+    {
+      err = HAL_FLASH_Program(write_type, (flash_base + addr), (uint32_t)&dword[0]);
+    }
     else
+	{
         err = HAL_OK;
+	}
 #elif FLASH0_PROG_UNIT == 0x10
     /* quadword api*/
     uint64_t dword[2];

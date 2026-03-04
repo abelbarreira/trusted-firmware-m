@@ -13,10 +13,11 @@ set(MCUBOOT_IMAGE_NUMBER                   2           CACHE STRING    "Whether 
 set(BL2_TRAILER_SIZE                       0x2000      CACHE STRING    "Trailer size")
 set(MCUBOOT_ALIGN_VAL                      16          CACHE STRING    "Align option to build image with imgtool")
 set(MCUBOOT_UPGRADE_STRATEGY      "SWAP_USING_SCRATCH" CACHE STRING    "Upgrade strategy for images")
+set(MCUBOOT_USE_PSA_CRYPTO                 ON          CACHE BOOL      "Enable the cryptographic abstraction layer to use PSA Crypto APIs")
 set(TFM_PARTITION_PLATFORM                 ON          CACHE BOOL      "Enable platform partition")
 set(MCUBOOT_BOOTSTRAP                      ON          CACHE BOOL      "Allow initial state with images in secondary slots(empty primary slots)")
-set(MCUBOOT_ENC_IMAGES                     ON          CACHE BOOL      "Enable encrypted image upgrade support")
-set(MCUBOOT_ENCRYPT_RSA                    ON          CACHE BOOL      "Use RSA for encrypted image upgrade support")
+set(MCUBOOT_ENC_IMAGES                     OFF         CACHE BOOL      "Enable encrypted image upgrade support")
+set(MCUBOOT_ENCRYPT_RSA                    OFF         CACHE BOOL      "Use RSA for encrypted image upgrade support")
 set(MCUBOOT_DATA_SHARING                   ON          CACHE BOOL      "Enable Data Sharing")
 ################################## Dependencies ################################################################################################
 set(TFM_PARTITION_INTERNAL_TRUSTED_STORAGE ON          CACHE BOOL      "Enable Internal Trusted Storage partition")
@@ -26,7 +27,6 @@ set(TF_PSA_CRYPTO_BUILD_TYPE               minsizerel  CACHE STRING    "Build ty
 set(TFM_DUMMY_PROVISIONING                 OFF         CACHE BOOL      "Provision with dummy values. NOT to be used in production")
 set(PLATFORM_DEFAULT_OTP_WRITEABLE         OFF         CACHE BOOL      "Use on chip flash with write support")
 set(PLATFORM_DEFAULT_NV_COUNTERS           OFF         CACHE BOOL      "Use default nv counter implementation.")
-set(PS_CRYPTO_AEAD_ALG                     PSA_ALG_GCM CACHE STRING    "The AEAD algorithm to use for authenticated encryption in Protected Storage")
 set(MCUBOOT_FIH_PROFILE                    LOW         CACHE STRING    "Fault injection hardening profile [OFF, LOW, MEDIUM, HIGH]")
 
 ################################## Platform-specific configurations ############################################################################
