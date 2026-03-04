@@ -62,7 +62,7 @@ void tfm_hal_boot_ns_cpu(uintptr_t start_addr)
     volatile uint32_t *PE0_CONFIG =
                         (uint32_t *)(CORSTONE1000_HOST_BASE_SYSTEM_CONTROL_BASE
                                      + HOST_CPU_PE0_CONFIG_OFFSET);
-#if CORSTONE1000_FVP_MULTICORE
+#if CORSTONE1000_MULTICORE
     volatile uint32_t *PE1_CONFIG =
                         (uint32_t *)(CORSTONE1000_HOST_BASE_SYSTEM_CONTROL_BASE
                                      + HOST_CPU_PE1_CONFIG_OFFSET);
@@ -80,7 +80,7 @@ void tfm_hal_boot_ns_cpu(uintptr_t start_addr)
 #endif
     /* Select host CPU architecture as AArch64 */
     *PE0_CONFIG |= AA64nAA32_MASK; /* 0b1 – AArch64 */
-#if CORSTONE1000_FVP_MULTICORE
+#if CORSTONE1000_MULTICORE
     *PE1_CONFIG |= AA64nAA32_MASK; /* 0b1 – AArch64 */
     *PE2_CONFIG |= AA64nAA32_MASK; /* 0b1 – AArch64 */
     *PE3_CONFIG |= AA64nAA32_MASK; /* 0b1 – AArch64 */
@@ -92,7 +92,7 @@ void tfm_hal_boot_ns_cpu(uintptr_t start_addr)
     /* Clear HOST_SYS_RST_CTRL register to bring host out of RESET */
     *reset_ctl_reg = 0;
 
-#if CORSTONE1000_FVP_MULTICORE
+#if CORSTONE1000_MULTICORE
     /* Wake up secondary cores.
      * This should be done after bringing the primary core out of reset.*/
     for (int core_index=1; core_index < PLATFORM_HOST_MAX_CORE_COUNT; core_index++) {
@@ -111,7 +111,7 @@ void tfm_hal_boot_ns_cpu(uintptr_t start_addr)
     PPU_SetOperatingPolicy(CORE0_PPU, PPU_OP_MODE_ONE_SLICE_SF_ONLY_ON, false);
     PPU_SetPowerPolicy(CORE0_PPU, PPU_PWR_MODE_ON, false);
 
-#if CORSTONE1000_FVP_MULTICORE
+#if CORSTONE1000_MULTICORE
     /* Power on all Cortex-A320 cores in DSU-120T Cluster */
     PPU_SetOperatingPolicy(CORE1_PPU, PPU_OP_MODE_ONE_SLICE_SF_ONLY_ON, false);
     PPU_SetPowerPolicy(CORE1_PPU, PPU_PWR_MODE_ON, false);

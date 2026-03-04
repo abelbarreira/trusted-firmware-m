@@ -46,7 +46,7 @@
 #define CFI_S
 
 /* Total number of host cores */
-#if CORSTONE1000_FVP_MULTICORE
+#if CORSTONE1000_MULTICORE
 #define PLATFORM_HOST_MAX_CORE_COUNT 4
 #else
 #define PLATFORM_HOST_MAX_CORE_COUNT 1
