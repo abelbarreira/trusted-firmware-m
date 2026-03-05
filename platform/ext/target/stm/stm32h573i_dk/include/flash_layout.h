@@ -25,19 +25,20 @@
  */
  /* Flash layout for stm32h573i_dk with BL2 (multiple image boot):
  *
- * 0x0000_0000 SCRATCH (40KB)
- * 0x0001_0000 BL2 - counters(16 KB)
- * 0x0001_4000 BL2 - MCUBoot (48 KB)
+ * 0x0000_0000 SCRATCH (48 KB)
+ * 0x0000_C000 BL2 - counters(16 KB)
+ * 0x0001_0000 BL2 - MCUBoot (96 KB)
  * 0x0002_8000 OTP Write Protect (16 KB)
- * 0x0003_2000 NV counters area (16 KB)
- * 0x0003_6000 Secure Storage Area (16 KB)
- * 0x0003_A000 Internal Trusted Storage Area (16 KB)
- * 0x0003_E000 Secure image     primary slot (100 KB)
- * 0x0007_E000 Non-secure image primary slot (280 KB)
- * 0x000C_E000 Secure image     secondary slot (100 KB)
- * 0x0010_E000 Non-secure image secondary slot (280 KB)
+ * 0x0002_C000 NV counters area (16 KB)
+ * 0x0003_0000 Secure Storage Area (16 KB)
+ * 0x0003_4000 Internal Trusted Storage Area (16 KB)
+ * 0x0003_8000 Secure image     primary slot (320 KB)
+ * 0x0008_8000 Non-secure image primary slot (576 KB)
+ * 0x0011_8000 Secure image     secondary slot (320 KB)
+ * 0x0016_8000 Non-secure image secondary slot (576 KB)
+ * 0x001f_8000 Non-secure free data (32 KB)
  *
- * Bl2 binary is written at 0x1_2000:
+ * Bl2 binary is written at 0x1_0000:
  * it contains bl2_counter init value, OTP write protect, NV counters area init.
  */
 
@@ -58,7 +59,7 @@
 
 /* scratch area */
 #define FLASH_AREA_SCRATCH_OFFSET       (0x0)
-#define FLASH_AREA_SCRATCH_SIZE         (0xC000) /* 40 KB */
+#define FLASH_AREA_SCRATCH_SIZE         (0xC000) /* 48 KB */
 
 /* control scratch area */
 #if (FLASH_AREA_SCRATCH_OFFSET % FLASH_AREA_IMAGE_SECTOR_SIZE) != 0
@@ -153,8 +154,8 @@
 
 /* Secure image primary slot */
 #define FLASH_AREA_0_ID                 (1)
-#define FLASH_AREA_0_DEVICE_ID          (FLASH_DEVICE_ID-FLASH_DEVICE_ID)
-#define FLASH_AREA_0_OFFSET             (FLASH_ITS_AREA_OFFSET+FLASH_ITS_AREA_SIZE)
+#define FLASH_AREA_0_DEVICE_ID          (0)
+#define FLASH_AREA_0_OFFSET             (FLASH_AREA_BEGIN_OFFSET)
 /* Control  Secure image primary slot */
 #if (FLASH_AREA_0_OFFSET  % FLASH_AREA_IMAGE_SECTOR_SIZE) != 0
 #error "FLASH_AREA_0_OFFSET  not aligned on FLASH_AREA_IMAGE_SECTOR_SIZE"
