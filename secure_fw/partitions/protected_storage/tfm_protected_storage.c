@@ -5,6 +5,8 @@
  *
  */
 
+#include <assert.h>
+
 #include "config_tfm.h"
 #include "config_ps_check.h"
 #include "tfm_protected_storage.h"
@@ -98,6 +100,8 @@ psa_status_t tfm_ps_get(int32_t client_id,
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
+    assert(p_data_length != NULL);
+
     /* Read the object data from the object system */
     return ps_object_read(uid, client_id, data_offset, data_size,
                           p_data_length);
@@ -110,6 +114,8 @@ psa_status_t tfm_ps_get_info(int32_t client_id, psa_storage_uid_t uid,
     if (uid == TFM_PS_INVALID_UID) {
         return PSA_ERROR_INVALID_ARGUMENT;
     }
+
+    assert(p_info != NULL);
 
     /* Get the info struct data from the object system */
     return ps_object_get_info(uid, client_id, p_info);
