@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, Arm Limited. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -12,6 +12,10 @@ psa_status_t ps_read_nv_counter(enum tfm_nv_counter_t counter_id,
                                 uint32_t *val)
 {
     enum tfm_platform_err_t err;
+
+    if (val == NULL) {
+        return PSA_ERROR_GENERIC_ERROR;
+    }
 
     err = tfm_platform_nv_counter_read(counter_id, PS_NV_COUNTER_SIZE,
                                        (uint8_t *)val);
