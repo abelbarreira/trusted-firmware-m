@@ -7,6 +7,7 @@
 
 #include "ps_encrypted_object.h"
 
+#include <assert.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -152,6 +153,15 @@ psa_status_t ps_encrypted_object_read(uint32_t fid,
     psa_status_t err;
     uint32_t decrypt_size;
     size_t data_length;
+
+#ifdef PS_ENCRYPTION
+    /*
+     * The destination buffer is the ps_object statically allocated  and ensured
+     * to be of proper size
+     * */
+    assert((sizeof(*obj) - offsetof(struct ps_object_t, header.crypto.ref.iv)) >=
+        PS_MAX_ENCRYPTED_OBJ_SIZE + STORED_HEADER_DATA_SIZE);
+#endif
 
     /* Read the encrypted object from the persistent area. The data stored via
      * ITS interface of this `fid` is the IV together with the encrypted object.
