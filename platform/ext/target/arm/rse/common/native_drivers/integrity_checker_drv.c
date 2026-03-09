@@ -289,6 +289,11 @@ enum integrity_checker_error_t integrity_checker_check_value(struct integrity_ch
 
     if (((uintptr_t)value % INTEGRITY_CHECKER_REQUIRED_ALIGNMENT) != 0
            || (value_size % INTEGRITY_CHECKER_REQUIRED_ALIGNMENT) != 0) {
+        if (value_size > INTEGRITY_CHECKER_OUTPUT_SIZE_SHA256) {
+            FATAL_ERR(INTEGRITY_CHECKER_ERROR_CHECK_VALUE_INVALID_ARGUMENT);
+            return INTEGRITY_CHECKER_ERROR_CHECK_VALUE_INVALID_ARGUMENT;
+        }
+
         for (int idx = 0; idx < value_size / sizeof(uint32_t); idx++) {
             temp_val[idx] = value[idx];
         }
