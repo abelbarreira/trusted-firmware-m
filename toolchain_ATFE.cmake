@@ -64,6 +64,8 @@ add_compile_options(
     # Strip /workspace/trusted-firmware-m
     -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=
     -meabi gnu
+    # Always enable debug symbols — this should not affect the final binary files
+    -g
 )
 
 add_link_options(

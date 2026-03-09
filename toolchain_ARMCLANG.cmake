@@ -77,6 +77,7 @@ add_compile_options(
     -fmacro-prefix-map=${TOP_LEVEL_PROJECT_DIR}/=
     # Strip /workspace/trusted-firmware-m
     -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=
+    # Always enable debug symbols — this should not affect the final binary files
     -g
     $<$<AND:$<COMPILE_LANGUAGE:C>,$<BOOL:${CONFIG_TFM_WARNINGS_ARE_ERRORS}>>:-Werror>
 )

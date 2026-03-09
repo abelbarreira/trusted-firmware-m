@@ -68,7 +68,8 @@ add_compile_options(
     # Strip /workspace/trusted-firmware-m
     -fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=
     -mthumb
-    $<$<COMPILE_LANGUAGE:C,CXX>:-g>
+    # Always enable debug symbols — this should not affect the final binary files
+    -g
     $<$<AND:$<COMPILE_LANGUAGE:C>,$<BOOL:${TFM_DEBUG_OPTIMISATION}>,$<CONFIG:Debug>>:-Og>
     $<$<AND:$<COMPILE_LANGUAGE:C>,$<BOOL:${CONFIG_TFM_WARNINGS_ARE_ERRORS}>>:-Werror>
 )
