@@ -30,8 +30,8 @@ target_sources(platform_s
 
 if(NS)
 target_sources(${NS_TARGET_NAME}
-        PRIVATE
-            ${STM_COMMON_DIR}/stm32wbaxx/Device/Source/startup_stm32wbaxx_ns.c
+    PRIVATE
+        ${STM_COMMON_DIR}/stm32wbaxx/Device/Source/startup_stm32wbaxx_ns.c
     )
 endif()
 
@@ -59,9 +59,6 @@ install(DIRECTORY   ${TARGET_PLATFORM_PATH}/ns/
 
 install(DIRECTORY   ${TARGET_PLATFORM_PATH}/include
         DESTINATION ${INSTALL_PLATFORM_NS_DIR})
-
-install(FILES       ${TARGET_PLATFORM_PATH}/accelerator/crypto_accelerator_config.h
-DESTINATION ${INSTALL_PLATFORM_NS_DIR}/include)
 
 install(DIRECTORY   ${STM_COMMON_DIR}/hal/accelerator/
         DESTINATION ${INSTALL_PLATFORM_NS_DIR}/include
@@ -104,12 +101,14 @@ set(tfm_s_split_out
 
 add_custom_target(tfm_s_fmw ALL SOURCES ${tfm_s_split_out})
 
-if(CMAKE_C_COMPILER STREQUAL "iccarm")
+
+if(${CMAKE_C_COMPILER_ID} STREQUAL "IAR")
 add_custom_command(
   OUTPUT ${tfm_s_split_out}
   DEPENDS tfm_s_bin
-  COMMAND ielftool --silent --exclude=.BL2_OTP --bin $<TARGET_FILE:tfm_s> ${tfm_s_bin_dir}/tfm_s_fmw.bin
-  COMMAND ielftool --silent --only=.BL2_OTP --bin $<TARGET_FILE:tfm_s> ${tfm_s_bin_dir}/tfm_s_otp.bin
+  # No known tool exists to separate the OTP part from the binary.
+  # As a result, the complete binary is generated.
+  COMMAND ielftool --silent --bin $<TARGET_FILE:tfm_s> ${tfm_s_bin_dir}/tfm_s_fmw.bin
 )
 else()
 add_custom_command(

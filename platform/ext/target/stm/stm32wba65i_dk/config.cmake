@@ -19,10 +19,9 @@ set(TFM_DUMMY_PROVISIONING                 ON           CACHE BOOL      "Provisi
 set(PLATFORM_DEFAULT_OTP_WRITEABLE         ON           CACHE BOOL      "Use on chip flash with write support")
 set(PLATFORM_DEFAULT_NV_COUNTERS           ON           CACHE BOOL      "Use default nv counter implementation.")
 set(PLATFORM_DEFAULT_OTP                   ON           CACHE BOOL      "Use trusted on-chip flash to implement OTP memory")
-set(PS_CRYPTO_AEAD_ALG                     PSA_ALG_GCM  CACHE STRING    "The AEAD algorithm to use for authenticated encryption in Protected Storage")
-set(TFM_PARTITION_PLATFORM                ON)
-set(DEFAULT_MCUBOOT_FLASH_MAP             ON           CACHE BOOL     "Whether to use the default flash map defined by TF-M project")
-set(MCUBOOT_IMAGE_NUMBER                2           CACHE STRING    "Whether to combine S and NS into either 1 image, or sign each seperately")
+set(TFM_PARTITION_PLATFORM                 ON)
+set(DEFAULT_MCUBOOT_FLASH_MAP              ON           CACHE BOOL     "Whether to use the default flash map defined by TF-M project")
+set(MCUBOOT_IMAGE_NUMBER                    2           CACHE STRING    "Whether to combine S and NS into either 1 image, or sign each seperately")
 ################################## Platform-specific configurations ####################################
 set(BL2                                    OFF          CACHE BOOL      "Whether to build BL2")
 set(CONFIG_TFM_USE_TRUSTZONE               ON           CACHE BOOL      "Use TrustZone")
@@ -41,3 +40,6 @@ set(TFM_CONFIG_FWU_MAX_WRITE_SIZE          1024        CACHE STRING    "The maxi
 set(TFM_CONFIG_FWU_MAX_MANIFEST_SIZE       0           CACHE STRING    "The maximum permitted size for manifest in psa_fwu_start(), in bytes.")
 set(FWU_DEVICE_CONFIG_FILE                 ""          CACHE STRING    "The device configuration file for Firmware Update partition")
 set(MCUBOOT_DATA_SHARING                  ON           CACHE BOOL      "Add sharing of application specific data using the same shared data area as for the measured boot")
+set(MCUBOOT_USE_PSA_CRYPTO                ON           CACHE BOOL      "Enable the cryptographic abstraction layer to use PSA Crypto APIs")
+#set(MCUBOOT_PATH      "set mcuboot PATH here if used"  CACHE PATH      "Path to MCUboot (or DOWNLOAD to fetch automatically")
+
