@@ -50,7 +50,6 @@ endif()
 
 install(FILES       RTE_Device.h
                     device_cfg.h
-                    ns/CMakeLists.txt
                     config.cmake
         DESTINATION ${INSTALL_PLATFORM_NS_DIR}
 )
