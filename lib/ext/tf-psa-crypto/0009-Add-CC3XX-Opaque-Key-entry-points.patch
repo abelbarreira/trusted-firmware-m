@@ -1,7 +1,7 @@
-From 659357ed0b7e57a5ca46d3bffa8c7bf96d4ca847 Mon Sep 17 00:00:00 2001
+From 5aab580a704924afadd8cabcba01b11ee43e79f0 Mon Sep 17 00:00:00 2001
 From: Amjad Ouled-Ameur <amjad.ouled-ameur@arm.com>
-Date: Thu, 5 Mar 2026 13:57:19 +0000
-Subject: [PATCH 09/14] Add CC3XX Opaque Key entry points
+Date: Thu, 12 Mar 2026 13:41:43 +0000
+Subject: [PATCH 09/16] Add CC3XX Opaque Key entry points
 
 TF-M requires a mechanism to leverage the use of HW-managed keys, the
 concept is called "Opaque Keys". Basically, the key ID as well as the key

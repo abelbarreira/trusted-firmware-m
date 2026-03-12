@@ -1,7 +1,7 @@
-From 1bbaf31c385267c556e5c962c6b441a88a9e684a Mon Sep 17 00:00:00 2001
+From 19e3d63ba4d1f78421d88a72b3c745f8481ae7ae Mon Sep 17 00:00:00 2001
 From: Amjad Ouled-Ameur <amjad.ouled-ameur@arm.com>
-Date: Thu, 5 Mar 2026 13:57:18 +0000
-Subject: [PATCH 08/14] psa: mac: only call memset if key_length is less than
+Date: Thu, 12 Mar 2026 13:41:43 +0000
+Subject: [PATCH 08/16] psa: mac: only call memset if key_length is less than
  block size
 
 In case key_length is equal to block_size, memset would be called with a

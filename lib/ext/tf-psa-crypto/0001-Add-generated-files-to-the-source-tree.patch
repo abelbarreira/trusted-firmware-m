@@ -1,7 +1,7 @@
-From 943dbe54c08cb0965198366da4bde4c4c04e91cc Mon Sep 17 00:00:00 2001
+From fecb68181358543512cc2d4978e437f7b6005ec4 Mon Sep 17 00:00:00 2001
 From: David Vincze <david.vincze@arm.com>
-Date: Thu, 5 Mar 2026 13:57:18 +0000
-Subject: [PATCH 01/14] Add generated files to the source tree
+Date: Thu, 12 Mar 2026 13:41:43 +0000
+Subject: [PATCH 01/16] Add generated files to the source tree
 
 Generated files are now automatically created when invoking CMake.
 However, not all components of TF-M use CMake to consume TF-PSA-Crypto

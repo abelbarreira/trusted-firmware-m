@@ -1,7 +1,7 @@
-From a8c7a425591d87c01e8fcf8f04bfdf4ad9fcafea Mon Sep 17 00:00:00 2001
+From 49c36ba676894e0c5d01ed991c9d3d45fe84aa23 Mon Sep 17 00:00:00 2001
 From: Amjad Ouled-Ameur <amjad.ouled-ameur@arm.com>
-Date: Thu, 5 Mar 2026 13:57:19 +0000
-Subject: [PATCH 14/14] Implement SP800-108 Counter CMAC key derivation in PSA
+Date: Thu, 12 Mar 2026 13:41:43 +0000
+Subject: [PATCH 14/16] Implement SP800-108 Counter CMAC key derivation in PSA
  Crypto Core
 
 This adds support for CMAC-based, counter mode key-derivation function,

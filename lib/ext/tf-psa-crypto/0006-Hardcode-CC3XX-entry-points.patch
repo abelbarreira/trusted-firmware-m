@@ -1,7 +1,7 @@
-From e8ef9f89d22acac023be83760f319f4a7ec04cb5 Mon Sep 17 00:00:00 2001
+From 09b8daadc017afbf302529156f49fee0c98aaaf2 Mon Sep 17 00:00:00 2001
 From: Antonio de Angelis <Antonio.deAngelis@arm.com>
-Date: Thu, 5 Mar 2026 13:57:18 +0000
-Subject: [PATCH 06/14] Hardcode CC3XX entry points
+Date: Thu, 12 Mar 2026 13:41:43 +0000
+Subject: [PATCH 06/16] Hardcode CC3XX entry points
 
 Manually hardcode PSA driver entry points for the CC3XX driver
 into psa crypto driver wrappers file (and provide missing entry point

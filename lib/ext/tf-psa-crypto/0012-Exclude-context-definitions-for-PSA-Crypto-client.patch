@@ -1,7 +1,7 @@
-From eb5d1b71023fa7242829dfc719b34dde73e3cab6 Mon Sep 17 00:00:00 2001
+From 09480d0cd5ec03ca1f54b3fb10a1845b10357655 Mon Sep 17 00:00:00 2001
 From: David Vincze <david.vincze@arm.com>
-Date: Thu, 5 Mar 2026 13:57:19 +0000
-Subject: [PATCH 12/14] Exclude context definitions for PSA Crypto client
+Date: Thu, 12 Mar 2026 13:41:43 +0000
+Subject: [PATCH 12/16] Exclude context definitions for PSA Crypto client
 
 Signed-off-by: David Vincze <david.vincze@arm.com>
 ---

@@ -1,7 +1,7 @@
-From 0e61a4fd485dcd4f9c9e55a95a8af256dfeb7ba1 Mon Sep 17 00:00:00 2001
+From 5a9b0db63ba967b167a8696efd178d74b29d67ef Mon Sep 17 00:00:00 2001
 From: Amjad Ouled-Ameur <amjad.ouled-ameur@arm.com>
-Date: Thu, 26 Feb 2026 12:49:17 +0000
-Subject: [PATCH 15/15] Support use of cc3xx opaque keys in PSA Crypto core
+Date: Thu, 12 Mar 2026 13:41:43 +0000
+Subject: [PATCH 15/16] Support use of cc3xx opaque keys in PSA Crypto core
 
 This allows passing cc3xx opaque keys to the PSA Core seamlessly via the
 existing TF-M builtin key platform hooks.
@@ -13,7 +13,7 @@ Signed-off-by: Amjad Ouled-Ameur <amjad.ouled-ameur@arm.com>
  2 files changed, 17 insertions(+), 1 deletion(-)
 
 diff --git a/core/psa_crypto.c b/core/psa_crypto.c
-index 550a161..5e9e07a 100644
+index a7ee0f1..565d0e4 100644
 --- a/core/psa_crypto.c
 +++ b/core/psa_crypto.c
 @@ -76,6 +76,10 @@
