@@ -11,7 +11,7 @@ import os
 import sys
 import click
 from jinja2 import Environment, FileSystemLoader
-from cryptography.hazmat.primitives.hashes import Hash, SHA256
+from cryptography.hazmat.primitives.hashes import Hash, SHA256, SHA384
 
 # Add the cwd to the path so that if there is a version of imgtool in there then
 # it gets used over the system imgtool. Used so that imgtool from upstream
@@ -33,16 +33,28 @@ os.environ['LANG'] = 'C.UTF-8'
 
 def get_key_hash_c_array(key_file, mcuboot_hw_key):
     key = imgtool.main.load_key(key_file)
+    key_der = key.get_public_bytes()
     key_bytes = []
+
+    # Detect curve from the SPKI parameters OID.
+    # secp256r1 OID: 06 08 2a 86 48 ce 3d 03 01 07
+    # secp384r1 OID: 06 05 2b 81 04 00 22
+    is_p256 = b"\x06\x08\x2a\x86\x48\xce\x3d\x03\x01\x07" in key_der
+    is_p384 = b"\x06\x05\x2b\x81\x04\x00\x22" in key_der
+    if not is_p256 and not is_p384:
+        raise ValueError(
+            "Unsupported EC curve in key '{}'. Expected secp256r1 or secp384r1.".format(
+                key_file))
+
     if mcuboot_hw_key == "ON":
-        digest = Hash(SHA256())
-        digest.update(key.get_public_bytes())
+        digest = Hash(SHA384() if is_p384 else SHA256())
+        digest.update(key_der)
         key_bytes = digest.finalize()
     else:
         # If the full key is used then use only the raw key
         # bit string (subjectPublicKey). The offset of the
-        # bit string is 26, so drop the first 26 bytes.
-        key_bytes = key.get_public_bytes()[26:]
+        # bit string is 26 for P-256 and 23 for P-384.
+        key_bytes = key_der[23:] if is_p384 else key_der[26:]
 
     return hex_to_c_array(key_bytes)
 
