@@ -36,6 +36,7 @@ target_compile_definitions(tfm_gpt
 target_link_libraries(tfm_gpt
     PUBLIC
         tfm_log_headers
+        tfm_vprintf_headers
     PRIVATE
         tfm_efi_guid
         tfm_efi_soft_crc
