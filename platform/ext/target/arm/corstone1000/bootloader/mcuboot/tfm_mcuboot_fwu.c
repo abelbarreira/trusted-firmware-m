@@ -214,7 +214,7 @@ const fwu_image_info_t fwu_image[NR_OF_IMAGES_IN_FW_BANK] = {
 #if PLATFORM_IS_FVP
     // FVP payloads GUIDs
     {
-        .image_name = "bl2_secondary",
+        .image_names = {"bl2_primary", "bl2_secondary"},
         .image_size = SE_BL2_PARTITION_SIZE,
         .image_offset = SE_BL2_PARTITION_BANK_OFFSET,
         .image_type = {
@@ -227,7 +227,7 @@ const fwu_image_info_t fwu_image[NR_OF_IMAGES_IN_FW_BANK] = {
         },
     },
     {
-        .image_name = "tfm_secondary",
+        .image_names = {"tfm_primary", "tfm_secondary"},
         .image_size = TFM_PARTITION_SIZE,
         .image_offset = TFM_PARTITION_BANK_OFFSET,
         .image_type = {
@@ -240,7 +240,7 @@ const fwu_image_info_t fwu_image[NR_OF_IMAGES_IN_FW_BANK] = {
         },
     },
     {
-        .image_name = "FIP_B",
+        .image_names = {"FIP_A", "FIP_B"},
         .image_size = FIP_PARTITION_SIZE,
         .image_offset = FIP_PARTITION_BANK_OFFSET,
         .image_type = {
@@ -253,7 +253,7 @@ const fwu_image_info_t fwu_image[NR_OF_IMAGES_IN_FW_BANK] = {
         },
     },
     {
-        .image_name = "kernel_secondary",
+        .image_names = {"kernel_primary", "kernel_secondary"},
         .image_size = INITRAMFS_PARTITION_SIZE,
         .image_offset = INITRAMFS_PARTITION_BANK_OFFSET,
         .image_type = {
@@ -268,7 +268,7 @@ const fwu_image_info_t fwu_image[NR_OF_IMAGES_IN_FW_BANK] = {
 #else
     // MPS3 payloads GUIDs
     {
-        .image_name = "bl2_secondary",
+        .image_names = {"bl2_primary", "bl2_secondary"},
         .image_size = SE_BL2_PARTITION_SIZE,
         .image_offset = SE_BL2_PARTITION_BANK_OFFSET,
         .image_type = {
@@ -281,7 +281,7 @@ const fwu_image_info_t fwu_image[NR_OF_IMAGES_IN_FW_BANK] = {
         },
     },
     {
-        .image_name = "tfm_secondary",
+        .image_names = {"tfm_primary", "tfm_secondary"},
         .image_size = TFM_PARTITION_SIZE,
         .image_offset = TFM_PARTITION_BANK_OFFSET,
         .image_type = {
@@ -294,7 +294,7 @@ const fwu_image_info_t fwu_image[NR_OF_IMAGES_IN_FW_BANK] = {
         }
     },
     {
-        .image_name = "FIP_B",
+        .image_names = {"FIP_A", "FIP_B"},
         .image_size = FIP_PARTITION_SIZE,
         .image_offset = FIP_PARTITION_BANK_OFFSET,
         .image_type = {
@@ -307,7 +307,7 @@ const fwu_image_info_t fwu_image[NR_OF_IMAGES_IN_FW_BANK] = {
         }
     },
     {
-        .image_name = "kernel_secondary",
+        .image_names = {"kernel_primary", "kernel_secondary"},
         .image_size = INITRAMFS_PARTITION_SIZE,
         .image_offset = INITRAMFS_PARTITION_BANK_OFFSET,
         .image_type = {
@@ -354,6 +354,15 @@ extern ARM_DRIVER_FLASH FWU_METADATA_FLASH_DEV;
                                                                                   * This is the value decided after monitoring the total time
                                                                                   * taken by the host to boot both on FVP and FPGA.
                                                                                   */
+#ifndef BL1_BUILD
+static void ascii_to_unicode(const char *ascii, char *unicode)
+{
+    for (int i = 0; i < strlen(ascii) + 1; ++i) {
+        unicode[i << 1] = ascii[i];
+        unicode[(i << 1) + 1] = '\0';
+    }
+}
+#endif
 
 #ifdef BL1_BUILD
 static psa_status_t private_metadata_read(
@@ -856,6 +865,11 @@ psa_status_t fwu_metadata_init(void)
     if (ret != PSA_SUCCESS) {
         return ret;
     }
+
+    ret = psa_crypto_init();
+    if (ret != PSA_SUCCESS) {
+        return ret;
+    }
 #endif
 
     /* Code assumes everything fits into a sector */
@@ -1145,6 +1159,45 @@ static psa_status_t fwu_select_previous(
     if (ret) {
         return ret;
     }
+
+#ifndef BL1_BUILD
+    /* Remove the GPT partitions for the rejected images. It is always the newer
+     * (second) partitions that are rejected, as they are created during the
+     * fwu process
+     */
+    for (int i = 0; i < NR_OF_IMAGES_IN_FW_BANK; ++i) {
+        struct partition_entry_t part;
+        ret = gpt_entry_read_by_type(&(fwu_image[i].image_type), 1, &part);
+
+        if (ret == PSA_ERROR_DOES_NOT_EXIST) {
+            FWU_LOG_MSG("%s: Unable to find partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[index]);
+            return ret;
+        } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+            FWU_LOG_MSG("%s: Flash error whilst reading GPT partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[index]);
+            return ret;
+        } else if (ret < 0) {
+            FWU_LOG_MSG("%s: Unable to read partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[index]);
+            return ret;
+        }
+
+        ret = gpt_entry_remove(&(part.partition_guid));
+        if (ret == PSA_ERROR_STORAGE_FAILURE) {
+            FWU_LOG_MSG("%s: Flash error whilst removing GPT partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[index]);
+            return ret;
+        } else if (ret < 0) {
+            FWU_LOG_MSG("%s: Unable to remove partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[index]);
+            return ret;
+        }
+
+        FWU_LOG_MSG("%s: Removed GPT partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[index]);
+    }
+#endif /* BL1_BUILD */
 
     FWU_LOG_MSG("%s: in regular state by choosing previous active bank\n\r",
                  __func__);
@@ -1595,6 +1648,47 @@ static psa_status_t fwu_accept_image(struct fwu_metadata *metadata,
         return ret;
     }
 
+#ifndef BL1_BUILD
+    /* Remove the old (first) partitions from the GPT header. It is always the
+     * older images to be removed, as they were not created by the update
+     * process but existed before
+     */
+    uint32_t previous_bank_index = metadata->previous_active_index;
+
+    for (int i = 0; i < NR_OF_IMAGES_IN_FW_BANK; ++i) {
+        struct partition_entry_t part;
+
+        ret = gpt_entry_read_by_type(
+                &(fwu_image[i].image_type),
+                0,
+                &part);
+        if (ret == PSA_ERROR_DOES_NOT_EXIST) {
+            FWU_LOG_MSG("%s: Unable to find partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[previous_bank_index]);
+            return ret;
+        } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+            FWU_LOG_MSG("%s: Flash error whilst reading GPT partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[previous_bank_index]);
+            return ret;
+        } else if (ret < 0) {
+            FWU_LOG_MSG("%s: Unable to read partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[previous_bank_index]);
+            return ret;
+        }
+
+        ret = gpt_entry_remove(&(part.partition_guid));
+        if (ret == PSA_ERROR_DOES_NOT_EXIST) {
+            FWU_LOG_MSG("%s: Flash error whilst removing GPT partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[previous_bank_index]);
+            return ret;
+        } else if (ret < 0) {
+            FWU_LOG_MSG("%s: Unable to remove partition '%s'\r\n",
+                    __func__, fwu_image[i].image_names[previous_bank_index]);
+            return ret;
+        }
+    }
+#endif
+
     FWU_LOG_MSG("%s: success: fwu state is changed to regular\n\r", __func__);
     return PSA_SUCCESS;
 }
@@ -1636,21 +1730,81 @@ static psa_status_t erase_staging_area(struct fwu_metadata* metadata, psa_fwu_co
     }
 
     uint32_t active_index = metadata->active_index;
+    uint32_t previous_active_index;
     uint32_t bank_offset;
     uint32_t image_offset;
+    uint32_t image_size;
     uint8_t fwu_image_index = component - FWU_FAKE_IMAGES_INDEX_COUNT; /* Decrement to get the correct fwu image index */
 
     if (active_index == BANK_0) {
         bank_offset = BANK_1_PARTITION_OFFSET;
+        previous_active_index = BANK_1;
     } else if (active_index == BANK_1) {
         bank_offset = BANK_0_PARTITION_OFFSET;
+        previous_active_index = BANK_0;
     } else {
         FWU_LOG_MSG("ERROR: %s: active_index %d\n\r",__func__,active_index);
         return PSA_ERROR_GENERIC_ERROR;
     }
 
+#ifdef BL1_BUILD
     image_offset = bank_offset + fwu_image[fwu_image_index].image_offset;
-    if (erase_image(image_offset, fwu_image[fwu_image_index].image_size)) {
+    image_size = fwu_image[fwu_image_index].image_size;
+#else
+    /* Use GPT to find partition instead */
+    struct partition_entry_t part;
+
+    psa_status_t ret = gpt_entry_read_by_type(&(fwu_image[fwu_image_index].image_type), 1, &part);
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
+        /* Create the partition in the expected space */
+        struct efi_guid_t new_guid = {0};
+        char unicode_name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+        ascii_to_unicode(fwu_image[fwu_image_index].image_names[previous_active_index], unicode_name);
+
+        ret = gpt_entry_create(&(fwu_image[fwu_image_index].image_type),
+                               (bank_offset + fwu_image[fwu_image_index].image_offset) / TFM_GPT_BLOCK_SIZE,
+                               1 + ((fwu_image[fwu_image_index].image_size - 1) / TFM_GPT_BLOCK_SIZE),
+                               0,
+                               unicode_name,
+                               &new_guid);
+        if (ret == PSA_ERROR_INSUFFICIENT_STORAGE) {
+            FWU_LOG_MSG("%s: No space left on device!\r\n", __func__);
+            return ret;
+        } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+            FWU_LOG_MSG("%s: Flash error whilst creating GPT partition '%s'!\r\n",
+                    __func__, fwu_image[fwu_image_index].image_names[previous_active_index]);
+            return ret;
+        } else if (ret < 0) {
+            FWU_LOG_MSG("%s: Unable to create GPT partition '%s': %d\r\n", __func__,
+                    fwu_image[fwu_image_index].image_names[previous_active_index], ret);
+            return ret;
+        }
+
+        ret = gpt_entry_read(&new_guid, &part);
+        if (ret == PSA_ERROR_STORAGE_FAILURE) {
+            FWU_LOG_MSG("%s: Flash error whilst reading GPT partition '%s'\r\n",
+                    __func__, fwu_image[fwu_image_index].image_names[previous_active_index]);
+            return ret;
+        } else if (ret < 0) {
+            FWU_LOG_MSG("%s: Unable to read GPT partition '%s': %d\r\n", __func__,
+                    fwu_image[fwu_image_index].image_names[previous_active_index], ret);
+            return ret;
+        }
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        FWU_LOG_MSG("%s: Flash error whilst reading GPT partition '%s'\r\n",
+                __func__, fwu_image[fwu_image_index].image_names[previous_active_index]);
+        return ret;
+    } else if (ret < 0) {
+        FWU_LOG_MSG("%s: Unable to read GPT partition '%s': %d\r\n", __func__,
+                fwu_image[fwu_image_index].image_names[previous_active_index], ret);
+        return ret;
+    }
+
+    image_offset = part.start * TFM_GPT_BLOCK_SIZE;
+    image_size = part.size * TFM_GPT_BLOCK_SIZE;
+#endif /* BL1_BUILD */
+
+    if (erase_image(image_offset, image_size)) {
         return PSA_ERROR_GENERIC_ERROR;
     }
 
@@ -1926,7 +2080,6 @@ static psa_status_t fwu_update_metadata(const psa_fwu_component_t *candidates, u
         goto out;
     }
     active_index = _metadata.active_index;
-
     if (active_index == BANK_0) {
         previous_active_index = BANK_1;
         bank_offset = BANK_1_PARTITION_OFFSET;
@@ -1983,15 +2136,89 @@ static psa_status_t copy_image_from_other_bank(int image_index,
     FWU_LOG_FUNC_ENTER;
 
     uint32_t bank_offset[NR_OF_FW_BANKS] = {BANK_0_PARTITION_OFFSET, BANK_1_PARTITION_OFFSET};
+    psa_status_t ret;
+
+#ifdef BL1_BUILD
+    /* Use offsets directly */
     size_t remaining_size = fwu_image[image_index].image_size;
     size_t data_size;
     size_t offset_read = bank_offset[active_index] + fwu_image[image_index].image_offset;
     size_t offset_write = bank_offset[previous_active_index] + fwu_image[image_index].image_offset;
     int data_transferred_count;
+#else
+    /* Use GPT to find the correct image */
+    struct partition_entry_t active_part;
+    ret = gpt_entry_read_by_type(
+            &(fwu_image[image_index].image_type),
+            0,
+            &active_part);
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
+        FWU_LOG_MSG("%s: Unable to find partition '%s'\r\n",
+                __func__, fwu_image[image_index].image_names[active_index]);
+        return ret;
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        FWU_LOG_MSG("%s: Flash error whilst reading GPT partition '%s'\r\n",
+                __func__, fwu_image[image_index].image_names[active_index]);
+        return ret;
+    } else if (ret < 0) {
+        FWU_LOG_MSG("%s: Unable to read partition '%s'\r\n",
+                __func__, fwu_image[image_index].image_names[active_index]);
+        return ret;
+    }
 
-    FWU_LOG_MSG("%s: Enter \n\r", __func__);
+    struct partition_entry_t prev_active_part;
+    ret = gpt_entry_read_by_type(
+            &(fwu_image[image_index].image_type),
+            1,
+            &prev_active_part);
 
-    psa_status_t ret = erase_image(offset_write, fwu_image[image_index].image_size);
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
+        /* Create the partition in the expected space */
+        struct efi_guid_t new_guid = {0};
+        char unicode_name[GPT_ENTRY_NAME_LENGTH] = {'\0'};
+        ascii_to_unicode(fwu_image[image_index].image_names[previous_active_index], unicode_name);
+
+        ret = gpt_entry_create(&(fwu_image[image_index].image_type),
+                               (bank_offset[previous_active_index] + fwu_image[image_index].image_offset) / TFM_GPT_BLOCK_SIZE,
+                               1 + ((fwu_image[image_index].image_size - 1) / TFM_GPT_BLOCK_SIZE),
+                               0,
+                               unicode_name,
+                               &new_guid);
+        if (ret == PSA_ERROR_INSUFFICIENT_STORAGE) {
+            FWU_LOG_MSG("%s: No space left on device!\r\n", __func__);
+            return ret;
+        } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+            FWU_LOG_MSG("%s: Flash error whilst creating GPT partition '%s'!\r\n",
+                    __func__, fwu_image[image_index].image_names[previous_active_index]);
+            return ret;
+        } else if (ret < 0) {
+            return ret;
+        }
+
+        ret = gpt_entry_read(&new_guid, &prev_active_part);
+        if (ret == PSA_ERROR_STORAGE_FAILURE) {
+            FWU_LOG_MSG("%s: Flash error whilst reading GPT partition '%s'\r\n",
+                    __func__, fwu_image[image_index].image_names[previous_active_index]);
+            return ret;
+        } else if (ret < 0) {
+            return ret;
+        }
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        FWU_LOG_MSG("%s: Flash error whilst reading GPT partition '%s'\r\n",
+                __func__, fwu_image[image_index].image_names[previous_active_index]);
+        return ret;
+    } else if (ret < 0) {
+        return ret;
+    }
+
+    size_t remaining_size = prev_active_part.size * TFM_GPT_BLOCK_SIZE;
+    size_t data_size;
+    size_t offset_read = active_part.start * TFM_GPT_BLOCK_SIZE;
+    size_t offset_write = prev_active_part.start * TFM_GPT_BLOCK_SIZE;
+    int data_transferred_count;
+#endif /* BL1_BUILD */
+
+    ret = erase_image(offset_write, remaining_size);
     if (ret != PSA_SUCCESS) {
         FWU_LOG_MSG("%s: ERROR - Flash erase failed for Image: %d\n\r", __func__, image_index);
         return ret;
@@ -2248,10 +2475,10 @@ psa_status_t fwu_bootloader_reject_staged_image(psa_fwu_component_t component)
         return PSA_ERROR_BAD_STATE;
     }
 
-    int ret;
+    psa_status_t ret;
     uint32_t active_index;;
-    uint32_t bank_offset;
     uint32_t image_offset;
+    uint32_t image_size;
     uint8_t image_index = component - FWU_FAKE_IMAGES_INDEX_COUNT;    /* Decrement to get the correct fwu image index */
 
     FWU_LOG_FUNC_ENTER;
@@ -2263,6 +2490,8 @@ psa_status_t fwu_bootloader_reject_staged_image(psa_fwu_component_t component)
     }
     active_index = _metadata.active_index;
 
+#ifdef BL1_BUILD
+    uint32_t bank_offset;
     if (active_index == BANK_0) {
         bank_offset = BANK_1_PARTITION_OFFSET;
     } else if (active_index == BANK_1) {
@@ -2274,8 +2503,62 @@ psa_status_t fwu_bootloader_reject_staged_image(psa_fwu_component_t component)
     }
 
     image_offset = bank_offset + fwu_image[image_index].image_offset;
+    image_size = fwu_image[image_index].image_size;
+#else
+    uint32_t previous_active_index;
+    struct partition_entry_t part;
 
-    if (erase_image(image_offset, fwu_image[image_index].image_size)) {
+    if (active_index == BANK_0) {
+        previous_active_index = BANK_1;
+    } else if (active_index == BANK_1) {
+        previous_active_index = BANK_0;
+    } else {
+        FWU_LOG_MSG("ERROR: %s: active_index %d\n\r",__func__,active_index);
+        ret = PSA_ERROR_GENERIC_ERROR;
+        goto out;
+    }
+
+    /* The newer entry of the same type is the staged image, as it was created
+     * during the fwu process
+     */
+    ret = gpt_entry_read_by_type(
+            &(fwu_image[image_index].image_type),
+            1,
+            &part);
+
+    if (ret == PSA_ERROR_DOES_NOT_EXIST) {
+        FWU_LOG_MSG("%s: Partition '%s' not found\n\r",
+                __func__, fwu_image[image_index].image_names[previous_active_index]);
+        goto out;
+    } else if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        FWU_LOG_MSG("%s : ERROR - flash failure reading partition '%s'\n\r",
+                __func__, fwu_image[image_index].image_names[previous_active_index]);
+        goto out;
+    } else if (ret < 0) {
+        FWU_LOG_MSG("Unable to find partition '%s', ret: %d\n\r",
+                fwu_image[image_index].image_names[previous_active_index], ret);
+        goto out;
+    }
+
+    /* Remove the partition. This only removes the entry from the header and
+     * does not erase the actual data the partition referred to
+     */
+    ret = gpt_entry_remove(&(part.partition_guid));
+    if (ret == PSA_ERROR_STORAGE_FAILURE) {
+        FWU_LOG_MSG("%s: Flash error whilst removing GPT partition '%s'\r\n",
+                __func__, fwu_image[image_index].image_names[previous_active_index]);
+        goto out;
+    } else if (ret < 0) {
+        FWU_LOG_MSG("%s: Unable to remove partition '%s'\r\n",
+                __func__, fwu_image[image_index].image_names[previous_active_index]);
+        goto out;
+    }
+
+    image_offset = part.start * TFM_GPT_BLOCK_SIZE;
+    image_size = part.size * TFM_GPT_BLOCK_SIZE;
+#endif /* BL1_BUILD */
+
+    if (erase_image(image_offset, image_size)) {
         return PSA_ERROR_GENERIC_ERROR;
     }
 

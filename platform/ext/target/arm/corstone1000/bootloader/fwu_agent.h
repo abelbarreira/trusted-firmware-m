@@ -8,6 +8,7 @@
 #ifndef FWU_AGENT_H
 #define FWU_AGENT_H
 
+#include "flash_layout.h"
 #include "psa/error.h"
 #include "efi_guid_structs.h"
 #include "gpt.h"
@@ -46,7 +47,7 @@ typedef struct {
     size_t image_size_recvd;
 } __packed fmp_header_image_info_t;
 
-/* Image information common for both the banks */
+/* Image information for each bank */
 typedef struct {
     /* Total size of the image */
     uint32_t image_size;
@@ -54,8 +55,8 @@ typedef struct {
     /* Offset of image within a bank. */
     uint32_t image_offset;
 
-    /* Name of the image in ascii */
-    char image_name[FWU_IMAGE_NAME_LENGTH];
+    /* Names of the image in ascii, one for each bank */
+    const char image_names[NR_OF_FW_BANKS][FWU_IMAGE_NAME_LENGTH];
 
     /* Image-type GUID */
     struct efi_guid_t image_type;
