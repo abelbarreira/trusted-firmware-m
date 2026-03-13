@@ -55,8 +55,6 @@ add_compile_options(
     -fdata-sections
     -ffunction-sections
     -fno-builtin
-    -fshort-enums
-    -fshort-wchar
     -funsigned-char
     # Strip /workspace/
     -fmacro-prefix-map=${TOP_LEVEL_PROJECT_DIR}/=

@@ -69,7 +69,6 @@ add_compile_options(
     -fdata-sections
     -ffunction-sections
     -fno-builtin
-    -fshort-enums
     -funsigned-char
     -nostdlib
     -masm=gnu

@@ -55,8 +55,6 @@ add_compile_options(
     -fdata-sections
     -ffunction-sections
     -fno-builtin
-    -fshort-enums
-    -fshort-wchar
     -funsigned-char
     -masm=gnu
     -g
@@ -196,4 +194,3 @@ macro(add_convert_to_bin_target target)
 
     add_imported_target(${target}_hex ${target}_bin "${bin_dir}/${target}.hex")
 endmacro()
-
