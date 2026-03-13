@@ -14,7 +14,7 @@ target_sources(tfm_efi_guid
 
 target_include_directories(tfm_efi_guid
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
+        inc
 )
 
 target_link_libraries(tfm_efi_guid
