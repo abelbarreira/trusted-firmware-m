@@ -39,6 +39,7 @@
  * This is used when bank consistency is maintained during partial capsule update
  */
 #define FLASH_CHUNK_SIZE                512
+static uint8_t flash_data_buf[FLASH_CHUNK_SIZE];
 
 /* Possible states of the bank.
  * Naming convention here matches the implementation in U-Boot 
@@ -1982,7 +1983,6 @@ static psa_status_t copy_image_from_other_bank(int image_index,
     FWU_LOG_FUNC_ENTER;
 
     uint32_t bank_offset[NR_OF_FW_BANKS] = {BANK_0_PARTITION_OFFSET, BANK_1_PARTITION_OFFSET};
-    uint8_t data[FLASH_CHUNK_SIZE];
     size_t remaining_size = fwu_image[image_index].image_size;
     size_t data_size;
     size_t offset_read = bank_offset[active_index] + fwu_image[image_index].image_offset;
@@ -2001,7 +2001,7 @@ static psa_status_t copy_image_from_other_bank(int image_index,
         data_size = (remaining_size > FLASH_CHUNK_SIZE) ? FLASH_CHUNK_SIZE : remaining_size;
 
         /* read image data from flash */
-        data_transferred_count = FWU_METADATA_FLASH_DEV.ReadData(offset_read, data, data_size);
+        data_transferred_count = FWU_METADATA_FLASH_DEV.ReadData(offset_read, flash_data_buf, data_size);
         if (data_transferred_count < 0) {
             FWU_LOG_MSG("%s: ERROR - Flash read failed (ret = %d)\n\r", __func__, data_transferred_count);
             return PSA_ERROR_STORAGE_FAILURE;
@@ -2016,7 +2016,7 @@ static psa_status_t copy_image_from_other_bank(int image_index,
         offset_read += data_size;
 
         /* write image data to flash */
-        data_transferred_count = FWU_METADATA_FLASH_DEV.ProgramData(offset_write, data, data_size);
+        data_transferred_count = FWU_METADATA_FLASH_DEV.ProgramData(offset_write, flash_data_buf, data_size);
         if (data_transferred_count < 0) {
             FWU_LOG_MSG("%s: ERROR - Flash read failed (ret = %d)\n\r", __func__, data_transferred_count);
             return PSA_ERROR_STORAGE_FAILURE;
