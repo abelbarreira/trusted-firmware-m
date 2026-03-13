@@ -14,5 +14,5 @@ target_sources(tfm_efi_soft_crc
 
 target_include_directories(tfm_efi_soft_crc
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
+        inc
 )
