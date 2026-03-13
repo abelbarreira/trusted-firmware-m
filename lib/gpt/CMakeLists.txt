@@ -9,10 +9,10 @@ cmake_minimum_required(VERSION 3.21)
 
 add_library(tfm_gpt STATIC)
 
-include(./config.cmake)
+set(GPT_LOG_LEVEL LOG_LEVEL_INFO CACHE STRING "Set default log level for the GPT library")
 
-if(NOT DEFINED TFM_GPT_BLOCK_SIZE OR NOT DEFINED GPT_LOG_LEVEL)
-    message(FATAL_ERROR "TFM_GPT_BLOCK_SIZE and GPT_LOG_LEVEL must be defined to use GPT library")
+if(NOT DEFINED TFM_GPT_BLOCK_SIZE)
+    message(FATAL_ERROR "TFM_GPT_BLOCK_SIZE must be defined to use GPT library")
 endif()
 
 target_sources(tfm_gpt
