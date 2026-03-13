@@ -61,7 +61,7 @@ enum atu_error_t atu_rse_set_start_logical_address(struct atu_dev_t *dev, uint8_
      * The value stored in this field is the start logical address
      * right shifted by the value of the PS
      */
-    p_atu->atursla[region] = (address >> ps);
+    p_atu->aturssla[region] = (address >> ps);
 
     return ATU_ERR_NONE;
 }
@@ -79,7 +79,7 @@ enum atu_error_t atu_rse_get_start_logical_address(struct atu_dev_t *dev, uint8_
         return err;
     }
 
-    *address = p_atu->atursla[region] << ps;
+    *address = p_atu->aturssla[region] << ps;
 
     return ATU_ERR_NONE;
 }
@@ -92,11 +92,11 @@ enum atu_error_t atu_rse_set_end_logical_address(struct atu_dev_t *dev, uint8_t 
     uint8_t ps = ATU_GET_ATUPS(p_atu);
 
     /* The end page should be greater than or equal to the start page */
-    if ((address >> ps) < p_atu->atursla[region]) {
+    if ((address >> ps) < p_atu->aturssla[region]) {
         return ATU_ERR_INVALID_LOGICAL_ADDRESS;
     }
 
-    p_atu->aturela[region] = ((address - 1) >> ps);
+    p_atu->atursela[region] = ((address - 1) >> ps);
 
     return ATU_ERR_NONE;
 }
@@ -114,7 +114,7 @@ enum atu_error_t atu_rse_get_end_logical_address(struct atu_dev_t *dev, uint8_t 
         return err;
     }
 
-    *address = (p_atu->aturela[region] + 1) << ps;
+    *address = (p_atu->atursela[region] + 1) << ps;
 
     return ATU_ERR_NONE;
 }
@@ -126,7 +126,7 @@ void atu_rse_set_physical_region_offset(struct atu_dev_t *dev, uint8_t region, u
     uint64_t shifted_offset = offset >> ps;
 
     p_atu->aturav_l[region] = (uint32_t)(shifted_offset);
-    p_atu->aturav_m[region] = (uint32_t)(shifted_offset >> 32);
+    p_atu->aturav_h[region] = (uint32_t)(shifted_offset >> 32);
 }
 
 enum atu_error_t atu_rse_get_physical_region_offset(struct atu_dev_t *dev, uint8_t region,
@@ -142,7 +142,7 @@ enum atu_error_t atu_rse_get_physical_region_offset(struct atu_dev_t *dev, uint8
         return err;
     }
 
-    shifted_offset = ((uint64_t)p_atu->aturav_m[region] << 32) | p_atu->aturav_l[region];
+    shifted_offset = ((uint64_t)p_atu->aturav_h[region] << 32) | p_atu->aturav_l[region];
     *offset = shifted_offset << ps;
 
     return ATU_ERR_NONE;

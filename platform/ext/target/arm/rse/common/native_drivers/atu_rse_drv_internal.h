@@ -31,15 +31,15 @@ struct _atu_reg_map_t {
     volatile uint32_t atuma;
                 /*!< Offset: 0x014 (R/ ) ATU Mismatched Address Register */
     volatile uint32_t reserved_0[2];   /*!< Offset: 0x018-0x01C Reserved */
-    volatile uint32_t atursla[32];
+    volatile uint32_t aturssla[32];
                 /*!< Offset: 0x020 (R/W) ATU Region Start Logical Address n
                 *                       Register */
-    volatile uint32_t aturela[32];
+    volatile uint32_t atursela[32];
                 /*!< Offset: 0x0A0 (R/W) ATU Region End Logical Address n
                 *                       Register */
     volatile uint32_t aturav_l[32];
                 /*!< Offset: 0x120 (R/W) ATU Region Add Value Low n Register */
-    volatile uint32_t aturav_m[32];
+    volatile uint32_t aturav_h[32];
                 /*!< Offset: 0x1A0 (R/W) ATU Region Add Value High n Register */
     volatile uint32_t aturoba[32];
                 /*!< Offset: 0x220 (R/W) ATU Region Output Bus Attributes n
