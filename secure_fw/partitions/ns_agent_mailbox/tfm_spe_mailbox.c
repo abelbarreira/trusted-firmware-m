@@ -183,16 +183,10 @@ static void mailbox_direct_reply(uint8_t idx, uint32_t result)
      */
 }
 
-__STATIC_INLINE int32_t check_mailbox_msg(const struct mailbox_msg_t *msg)
-{
-    /*
-     * TODO
-     * Comprehensive check of mailbox msessage content can be implemented here.
-     */
-    (void)msg;
-    return MAILBOX_SUCCESS;
-}
-
+/*
+ * The full validation of the copied vectors[] take place inside SPM within
+ * spm_associate_call_params from tfm_rpc_psa_call().
+ */
 static int local_copy_vects(const struct psa_client_params_t *params,
                             uint32_t idx,
                             uint32_t *control)
@@ -396,11 +390,6 @@ int32_t tfm_mailbox_handle_msg(void)
         msg_ptr = &spe_mailbox_queue.queue[idx].msg;
         MAILBOX_INVALIDATE_CACHE(&spe_mailbox_queue.ns_slots[idx].msg, sizeof(*msg_ptr));
         spm_memcpy(msg_ptr, &spe_mailbox_queue.ns_slots[idx].msg, sizeof(*msg_ptr));
-
-        if (check_mailbox_msg(msg_ptr) != MAILBOX_SUCCESS) {
-            mailbox_clean_queue_slot(idx);
-            continue;
-        }
 
         get_spe_mailbox_msg_handle(idx,
                                    &spe_mailbox_queue.queue[idx].msg_handle);
