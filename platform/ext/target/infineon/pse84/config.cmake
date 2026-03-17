@@ -73,7 +73,7 @@ set(IFX_SE_RT_SERVICES_UTILS_VERSION        "release-v1.2.0" CACHE STRING  "The 
 set(IFX_SE_RT_SERVICES_UTILS_S_TARGET       "ifx_se_rt_services_utils_s"  CACHE STRING  "Infineon SE RT Services Utils library target for S image used by Infineon platform")
 
 set(IFX_MBEDTLS_ACCELERATION_LIB_PATH       "DOWNLOAD"  CACHE PATH  "Path to Infineon MBEDTLS Acceleration library (or DOWNLOAD to fetch automatically)")
-set(IFX_MBEDTLS_ACCELERATION_LIB_GIT_REMOTE "https://github.com/Infineon/cy-mbedtls-acceleration" CACHE STRING "The URL (or path) to retrieve MBEDTLS Acceleration from.")
+set(IFX_MBEDTLS_ACCELERATION_LIB_GIT_REMOTE "https://github.com/Infineon/cy-mbedtls-acceleration" CACHE STRING "The URL to retrieve MBEDTLS Acceleration from.")
 set(IFX_MBEDTLS_ACCELERATION_LIB_VERSION    "release-v3.0.0" CACHE STRING "The version of Infineon MBEDTLS Acceleration library to use")
 set(IFX_MBEDTLS_ACCELERATOR_VALID_TYPES     "MXCRYPTO")
 set(IFX_MBEDTLS_ACCELERATOR_TYPE            "MXCRYPTO"  CACHE STRING  "Specifies type of accelerator for a project")

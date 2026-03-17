@@ -9,7 +9,7 @@ fetch_remote_library(
     LIB_SOURCE_PATH_VAR     LIB_EVENTLOG_PATH
     LIB_BASE_DIR            ${CMAKE_BINARY_DIR}/lib/ext
     FETCH_CONTENT_ARGS
-        GIT_REPOSITORY      https://git.trustedfirmware.org/shared/libEventLog
+        GIT_REPOSITORY      ${LIB_EVENTLOG_GIT_REMOTE}
         GIT_TAG             ${LIB_EVENTLOG_VERSION}
         GIT_SHALLOW         FALSE
         GIT_PROGRESS        TRUE

@@ -39,24 +39,29 @@ set(PROJECT_CONFIG_HEADER_FILE          ""          CACHE FILEPATH  "User define
 set(TF_PSA_CRYPTO_PATH                  "DOWNLOAD"  CACHE PATH      "Path to TF-PSA-Crypto (or DOWNLOAD to fetch automatically")
 set(TF_PSA_CRYPTO_VERSION               "v1.0.0"    CACHE STRING    "The version of TF-PSA-Crypto to use")
 set(TF_PSA_CRYPTO_FORCE_PATCH           OFF         CACHE BOOL      "Always apply TF-PSA-Crypto patches")
-set(TF_PSA_CRYPTO_GIT_REMOTE            "https://github.com/Mbed-TLS/TF-PSA-Crypto" CACHE STRING "The URL (or path) to retrieve TF-PSA-Crypto from.")
+set(TF_PSA_CRYPTO_GIT_REMOTE            "https://github.com/Mbed-TLS/TF-PSA-Crypto" CACHE STRING "The URL to retrieve TF-PSA-Crypto from.")
 
 set(MCUBOOT_PATH                        "DOWNLOAD"  CACHE PATH      "Path to MCUboot (or DOWNLOAD to fetch automatically")
+set(MCUBOOT_GIT_REMOTE                  "https://github.com/mcu-tools/mcuboot.git" CACHE STRING "The URL to retrieve MCUboot from.")
 set(MCUBOOT_FORCE_PATCH                 OFF         CACHE BOOL      "Always apply MCUboot patches")
 set(MCUBOOT_VERSION                     "tfm-2.3.0" CACHE STRING    "The version of MCUboot to use")
 
 set(TFM_EXTRAS_REPO_PATH                "DOWNLOAD"  CACHE PATH      "Path to tf-m-extras repo (or DOWNLOAD to fetch automatically")
+set(TFM_EXTRAS_GIT_REMOTE               "https://git.trustedfirmware.org/TF-M/tf-m-extras.git" CACHE STRING "The URL to retrieve tf-m-extras from")
 set(TFM_EXTRAS_REPO_VERSION             "52aa709b"  CACHE STRING    "The version of tf-m-extras to use")
 
 set(LIB_EVENTLOG_PATH                   "DOWNLOAD"  CACHE PATH      "Path to LibEventLog repo (or DOWNLOAD to fetch automatically")
+set(LIB_EVENTLOG_GIT_REMOTE             "https://git.trustedfirmware.org/shared/libEventLog" CACHE STRING "The URL to retrieve LibEventLog from.")
 set(LIB_EVENTLOG_VERSION                "f459fa60"  CACHE STRING    "The version of LibEventLog to use")
 set(EVENT_LOG_BUFFER_SIZE               "0x170"     CACHE STRING    "Size of event log buffer size")
 
+set(LIB_DTPM_GIT_REMOTE                 "https://git.trustedfirmware.org/shared/libTPM" CACHE STRING "The URL to retrieve LibTPM from.")
 set(LIB_DTPM_VERSION                    "2adab98"   CACHE STRING    "The version of LibTPM to use")
 
 set(PLATFORM_PSA_ADAC_SECURE_DEBUG      FALSE       CACHE BOOL      "Whether to use psa-adac secure debug.")
 set(PSA_ADAC_AS_TFM_RUNTIME_SERVICE     OFF         CACHE BOOL      "Integrate ADAC as TF-M runtime service")
 set(PLATFORM_PSA_ADAC_SOURCE_PATH       "DOWNLOAD"  CACHE PATH      "Path to source dir of psa-adac.")
+set(PLATFORM_PSA_ADAC_GIT_REMOTE        "https://git.trustedfirmware.org/shared/psa-adac.git" CACHE STRING "The URL to retrieve psa-adac from.")
 set(PLATFORM_PSA_ADAC_VERSION           "a49436c"   CACHE STRING    "The version of psa-adac to use.")
 set(PLATFORM_RAM_FS                     OFF         CACHE BOOL      "Enables the use of RAM instead of the persistent storage device to store the FS in Secure Storage services")
 

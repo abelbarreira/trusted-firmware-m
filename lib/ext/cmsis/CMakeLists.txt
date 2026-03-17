@@ -10,6 +10,7 @@ cmake_minimum_required(VERSION 3.21)
 # Default configuration of CMSIS repository
 set(CMSIS_PATH     "DOWNLOAD"       CACHE PATH      "Path to cmsis (or DOWNLOAD to fetch automatically")
 set(CMSIS_TAG      "v6.2.0"         CACHE STRING    "The version of cmsis to use")
+set(CMSIS_GIT_REMOTE "https://github.com/ARM-software/CMSIS_6.git" CACHE STRING "The URL to retrieve cmsis from.")
 
 fetch_remote_library(
     LIB_NAME                cmsis
@@ -17,7 +18,7 @@ fetch_remote_library(
     LIB_PATCH_DIR           ${CMAKE_CURRENT_LIST_DIR}
     LIB_BASE_DIR            "${CMAKE_BINARY_DIR}/lib/ext"
     FETCH_CONTENT_ARGS
-        GIT_REPOSITORY      https://github.com/ARM-software/CMSIS_6.git
+        GIT_REPOSITORY      ${CMSIS_GIT_REMOTE}
         GIT_TAG             ${CMSIS_TAG}
         GIT_SHALLOW         TRUE
         GIT_PROGRESS        TRUE

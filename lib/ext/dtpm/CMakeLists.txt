@@ -9,7 +9,7 @@ fetch_remote_library(
     LIB_SOURCE_PATH_VAR     LIB_DTPM_PATH
     LIB_BASE_DIR            ${CMAKE_BINARY_DIR}/lib/ext
     FETCH_CONTENT_ARGS
-        GIT_REPOSITORY      https://git.trustedfirmware.org/shared/libTPM
+        GIT_REPOSITORY      ${LIB_DTPM_GIT_REMOTE}
         GIT_TAG             ${LIB_DTPM_VERSION}
         GIT_SHALLOW         FALSE
         GIT_PROGRESS        TRUE

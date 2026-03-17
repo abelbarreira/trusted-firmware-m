@@ -15,7 +15,7 @@ fetch_remote_library(
     LIB_PATCH_DIR           ${CMAKE_SOURCE_DIR}/lib/ext/mcuboot
     LIB_FORCE_PATCH         ${MCUBOOT_FORCE_PATCH}
     FETCH_CONTENT_ARGS
-        GIT_REPOSITORY      https://github.com/mcu-tools/mcuboot.git
+        GIT_REPOSITORY      ${MCUBOOT_GIT_REMOTE}
         GIT_TAG             ${MCUBOOT_VERSION}
         GIT_PROGRESS        TRUE
         GIT_SHALLOW         TRUE

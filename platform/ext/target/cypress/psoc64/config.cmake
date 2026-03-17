@@ -27,7 +27,7 @@ set(TFM_PARTITION_CRYPTO                ON          CACHE BOOL      "Enable Cryp
 
 set(CY_MTB_PDL_CAT1_LIB_PATH            "DOWNLOAD"  CACHE PATH      "Path to MTB_PDL_CAT1 repo (or DOWNLOAD to fetch automatically")
 set(CY_MTB_PDL_CAT1_LIB_VERSION         "release-v2.0.0" CACHE STRING "The version of MTB_PDL_CAT1 to use")
-set(CY_MTB_PDL_CAT1_LIB_GIT_REMOTE      "https://github.com/Infineon/mtb-pdl-cat1.git" CACHE STRING "The URL (or path) to retrieve MTB_PDL_CAT1 from.")
+set(CY_MTB_PDL_CAT1_LIB_GIT_REMOTE      "https://github.com/Infineon/mtb-pdl-cat1.git" CACHE STRING "The URL to retrieve MTB_PDL_CAT1 from.")
 set(CY_MTB_PDL_CAT1_FORCE_PATCH         OFF         CACHE BOOL      "Always apply MTB_PDL_CAT1 patches")
 
 set(CY_P64_UTILS_LIB_PATH               "DOWNLOAD"  CACHE PATH      "Path to p64_utils repo (or DOWNLOAD to fetch automatically")
