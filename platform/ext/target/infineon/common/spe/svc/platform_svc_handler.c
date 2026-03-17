@@ -18,7 +18,6 @@
 #include "target_cfg.h"
 #include "tfm_hal_isolation.h"
 #include "tfm_peripherals_def.h"
-#include "coverity_check.h"
 #if IFX_UART_ENABLED
 #include "uart_pdl_stdout.h"
 #endif
