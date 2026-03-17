@@ -27,8 +27,9 @@ target_include_directories(psa_crypto_library_config
 # enable only if debugging information may be needed.
 if(${TFM_PARTITION_LOG_LEVEL} STREQUAL LOG_LEVEL_NONE)
     set(CC_LOG_ENABLED OFF)
-else()
-    set(CC_LOG_ENABLED $<CONFIG:Debug,relwithdebinfo>)
+elseif(CMAKE_BUILD_TYPE STREQUAL Debug OR
+       CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+    set(CC_LOG_ENABLED ON)
 endif()
 
 # Fetch PSA Crypto drivers from external repository
@@ -124,7 +125,7 @@ if (TFM_PARTITION_CRYPTO)
         target_sources(crypto_service_crypto_hw
             PRIVATE
                 cc312.c
-                $<$<BOOL:${CC_LOG_ENABLED}>:cc312_log.c>
+                $<$<BOOL:${CC_LOG_ENABLED}>:${CMAKE_CURRENT_SOURCE_DIR}/cc312_log.c>
         )
 
         target_include_directories(crypto_service_crypto_hw
@@ -150,13 +151,12 @@ if (TFM_PARTITION_CRYPTO)
 
         target_sources(${CC312_LIB_PREFIX}cc312
             PRIVATE
-                $<$<BOOL:${CC_LOG_ENABLED}>:cc312_log.c>
+                $<$<BOOL:${CC_LOG_ENABLED}>:${CMAKE_CURRENT_SOURCE_DIR}/cc312_log.c>
         )
 
         target_compile_options(${CC312_LIB_PREFIX}cc312
             PUBLIC
-                $<$<C_COMPILER_ID:GNU,Clang>:-Wno-unused-parameter>
-                $<$<C_COMPILER_ID:ARMClang>:-Wno-unused-parameter>
+                $<$<C_COMPILER_ID:GNU,Clang,ARMClang>:-Wno-unused-parameter>
         )
     endif()
 
