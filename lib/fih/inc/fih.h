@@ -364,7 +364,14 @@ uint32_t fih_cond_panic() {
       (((fih_delay() && (!(!(cond)))) && fih_cond_panic()) || \
        ((fih_delay() && (cond)) && fih_cond_panic())))
 
-
+/*
+ * Guard a condition against tampering by trying 3 times and returning 'true' if
+ * and only if all the evaluations were true.
+ * It satisfies the needs that:
+ * - entering a branch must take place only if the given condition is not
+ *   tampered
+ * - skipping the branch is safe, no dangerous side-effects
+ */
 #define FIH_COND_CHECK_SAFE_SKIP(cond) \
     ((cond) &&                         \
      fih_delay() &&                    \
