@@ -30,7 +30,6 @@ psa_status_t ifx_ext_sp_init(void)
     /* Register the user SRF module */
     result = mtb_srf_module_register(&cybsp_srf_context, &ifx_user_srf_module);
     if (result != CY_RSLT_SUCCESS) {
-        ERROR_UNPRIV("Failed to register user SRF module: 0x%x\n", result);
         return PSA_ERROR_GENERIC_ERROR;
     }
 #endif /* IFX_EXT_SP_REGISTER_USER_SRF_MODULE */
