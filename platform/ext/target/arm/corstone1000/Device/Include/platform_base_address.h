@@ -91,7 +91,7 @@
 #define CORSTONE1000_HOST_TRUSTED_RAM_BASE         (CORSTONE1000_HOST_ADDRESS_SPACE_BASE + CORSTONE1000_HOST_CVM_OFFSET)                                                  /* On-chip Volatile Memory */
 #define CORSTONE1000_HOST_XNVM_BASE                (CORSTONE1000_HOST_ADDRESS_SPACE_BASE + CORSTONE1000_HOST_XNVM_OFFSET)                                                 /* eXecute-in-place Non-volatile Memory */
 #define CORSTONE1000_HOST_BASE_SYSTEM_CONTROL_BASE (CORSTONE1000_HOST_ADDRESS_SPACE_BASE + CORSTONE1000_HOST_BASE_SYSTEM_CONTROL_BASE_OFFSET)                             /* Security Control Bits */
-#define CORSTONE1000_EXT_SYS_RESET_REG             (CORSTONE1000_HOST_BASE_SYSTEM_CONTROL_BASE + CORSTONE1000_HOST_EXT_SYS0_RST_CTRL_OFFSET)                              /* External System (Cortex-M3) */
+#define CORSTONE1000_EXT_SYS_RESET_REG             (CORSTONE1000_HOST_BASE_SYSTEM_CONTROL_BASE + CORSTONE1000_HOST_EXT_SYS0_RST_CTRL_OFFSET)                              /* External System (Cortex-M3/NPU) */
 #define CORSTONE1000_HOST_FIREWALL_BASE            (CORSTONE1000_HOST_ADDRESS_SPACE_BASE + CORSTONE1000_HOST_FIREWALL_BASE_OFFSET)                                        /* System Firewall */
 #define CORSTONE1000_HOST_INT_APBCOM_BASE          (CORSTONE1000_HOST_ADDRESS_SPACE_BASE + CORSTONE1000_HOST_INT_APBCOM_BASE_OFFSET)                                      /* Internal Advanced Peripheral Bus Communication */
 #define CORSTONE1000_HOST_FPGA_SCC_REGISTERS       (CORSTONE1000_HOST_ADDRESS_SPACE_BASE + CORSTONE1000_HOST_FPGA_SCC_REGISTERS_OFFSET)                                   /* FPGA Serial Communication Controller Registers */

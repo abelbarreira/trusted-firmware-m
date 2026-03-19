@@ -494,6 +494,11 @@ if (CORSTONE1000_CORTEX_A320)
         PUBLIC
             CORSTONE1000_CORTEX_A320
     )
+
+    target_compile_definitions(platform_s
+        PUBLIC
+            CORSTONE1000_CORTEX_A320
+    )
 endif()
 
 #========================= tfm_adac ============================================#

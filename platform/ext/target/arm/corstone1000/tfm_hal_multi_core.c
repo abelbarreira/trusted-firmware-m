@@ -25,7 +25,7 @@
 
 #define AA64nAA32_MASK (1 << 3)
 
-#ifdef EXTERNAL_SYSTEM_SUPPORT
+#if defined(EXTERNAL_SYSTEM_SUPPORT) || defined(CORSTONE1000_CORTEX_A320)
 void tfm_external_system_boot(void)
 {
     volatile uint32_t *ext_sys_reset_ctl_reg = (uint32_t *)(CORSTONE1000_EXT_SYS_RESET_REG);
@@ -123,7 +123,7 @@ void tfm_hal_boot_ns_cpu(uintptr_t start_addr)
 #endif
 #endif
 
-#ifdef EXTERNAL_SYSTEM_SUPPORT
+#if defined(EXTERNAL_SYSTEM_SUPPORT) || defined(CORSTONE1000_CORTEX_A320)
     /*release EXT SYS out of reset*/
     tfm_external_system_boot();
 #endif
