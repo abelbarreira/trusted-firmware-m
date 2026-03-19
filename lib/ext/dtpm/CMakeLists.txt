@@ -46,6 +46,8 @@ target_include_directories(lib_tpm
 target_link_libraries(lib_tpm
     PRIVATE
         tfm_log_headers
+        tfm_helper_lib
+        cmsis
 )
 
 add_compile_definitions(LOG_LEVEL=${TFM_SPM_LOG_LEVEL})

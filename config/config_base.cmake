@@ -56,7 +56,7 @@ set(LIB_EVENTLOG_VERSION                "f459fa60"  CACHE STRING    "The version
 set(EVENT_LOG_BUFFER_SIZE               "0x170"     CACHE STRING    "Size of event log buffer size")
 
 set(LIB_DTPM_GIT_REMOTE                 "https://git.trustedfirmware.org/shared/libTPM" CACHE STRING "The URL to retrieve LibTPM from.")
-set(LIB_DTPM_VERSION                    "2adab98"   CACHE STRING    "The version of LibTPM to use")
+set(LIB_DTPM_VERSION                    "119bfd8"   CACHE STRING    "The version of LibTPM to use")
 
 set(PLATFORM_PSA_ADAC_SECURE_DEBUG      FALSE       CACHE BOOL      "Whether to use psa-adac secure debug.")
 set(PSA_ADAC_AS_TFM_RUNTIME_SERVICE     OFF         CACHE BOOL      "Integrate ADAC as TF-M runtime service")
