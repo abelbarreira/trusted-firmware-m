@@ -22,7 +22,7 @@ fetch_remote_library(
     FETCH_CONTENT_ARGS
         GIT_REPOSITORY      https://git.trustedfirmware.org/shared/tf-psa-crypto-drivers
         GIT_TAG             ${PSA_CRYPTO_DRIVER_VERSION}
-        GIT_SHALLOW         TRUE
+        GIT_SHALLOW         FALSE
         GIT_PROGRESS        TRUE
 )
 
