@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Copyright (c) 2023-2024 Cypress Semiconductor Corporation (an Infineon company)
+# Copyright (c) 2023-2026 Cypress Semiconductor Corporation (an Infineon company)
 # or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -36,6 +36,11 @@
         "description": "isolation l1/l2 linker script",
         "template": "platform/ext/target/infineon/common/toolchain/iar/tfm_common_s.icf.template",
         "output": "platform/ext/target/infineon/common/toolchain/iar/tfm_common_s.icf"
+    },
+    {
+        "description": "isolation l1/l2 linker script",
+        "template": "platform/ext/target/infineon/common/toolchain/atfe/tfm_common_s.ld.template",
+        "output": "platform/ext/target/infineon/common/toolchain/atfe/tfm_common_s.ld"
     },
   ]
 }

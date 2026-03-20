@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Copyright (c) 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
+# Copyright (c) 2023-2026 Cypress Semiconductor Corporation (an Infineon company)
 # or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -25,6 +25,7 @@ target_sources(ifx_pdl_ns
         # TOOLCHAIN_LLVM_ARM is used. GCC cy_syslib_ext.S can not be used as it
         # contains .func directives which are not supported by ARM Clang assembler.
         $<$<C_COMPILER_ID:ARMClang>:${IFX_PDL_LIB_PATH}/drivers/source/TOOLCHAIN_LLVM_ARM/cy_syslib_ext.S>
+        $<$<C_COMPILER_ID:Clang>:${IFX_PDL_LIB_PATH}/drivers/source/TOOLCHAIN_LLVM_ARM/cy_syslib_ext.S>
         $<$<C_COMPILER_ID:GNU>:${IFX_PDL_LIB_PATH}/drivers/source/TOOLCHAIN_GCC_ARM/cy_syslib_ext.S>
         $<$<C_COMPILER_ID:IAR>:${IFX_PDL_LIB_PATH}/drivers/source/TOOLCHAIN_IAR/cy_syslib_ext.s>
         ${IFX_PDL_LIB_PATH}/drivers/source/cy_gpio.c

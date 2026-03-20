@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Copyright (c) 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
+# Copyright (c) 2023-2026 Cypress Semiconductor Corporation (an Infineon company)
 # or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 # SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
 #
@@ -20,6 +20,7 @@ install(DIRECTORY   ${CMAKE_CURRENT_LIST_DIR}/device
 install(FILES       ${IFX_COMMON_SOURCE_DIR}/device/src/armclang/ifx_common_ns.sct
                     ${IFX_COMMON_SOURCE_DIR}/device/src/gcc/ifx_common_ns.ld
                     ${IFX_COMMON_SOURCE_DIR}/device/src/iar/ifx_common_ns.icf
+                    ${IFX_COMMON_SOURCE_DIR}/device/src/atfe/ifx_common_ns.ldc
         DESTINATION ${INSTALL_PLATFORM_NS_DIR}/linker_scripts)
 
 install(DIRECTORY   ${CMAKE_CURRENT_LIST_DIR}/drivers/stdio

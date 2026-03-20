@@ -168,10 +168,12 @@ target_add_scatter_file(tfm_s
     $<$<AND:$<VERSION_LESS:${TFM_ISOLATION_LEVEL},3>,$<C_COMPILER_ID:ARMClang>>:${IFX_GENERATED_DIR}/platform/ext/target/infineon/common/toolchain/armclang/tfm_common_s.sct>
     $<$<AND:$<VERSION_LESS:${TFM_ISOLATION_LEVEL},3>,$<C_COMPILER_ID:GNU>>:${IFX_GENERATED_DIR}/platform/ext/target/infineon/common/toolchain/gcc/tfm_common_s.ld>
     $<$<AND:$<VERSION_LESS:${TFM_ISOLATION_LEVEL},3>,$<C_COMPILER_ID:IAR>>:${IFX_GENERATED_DIR}/platform/ext/target/infineon/common/toolchain/iar/tfm_common_s.icf>
+    $<$<AND:$<VERSION_LESS:${TFM_ISOLATION_LEVEL},3>,$<OR:$<C_COMPILER_ID:ATFE>,$<C_COMPILER_ID:Clang>>>:${IFX_GENERATED_DIR}/platform/ext/target/infineon/common/toolchain/atfe/tfm_common_s.ld>
 
     $<$<AND:$<VERSION_EQUAL:${TFM_ISOLATION_LEVEL},3>,$<C_COMPILER_ID:ARMClang>>:${IFX_GENERATED_DIR}/platform/ext/target/infineon/common/toolchain/armclang/tfm_isolation_l3.sct>
     $<$<AND:$<VERSION_EQUAL:${TFM_ISOLATION_LEVEL},3>,$<C_COMPILER_ID:GNU>>:${IFX_GENERATED_DIR}/platform/ext/target/infineon/common/toolchain/gcc/tfm_isolation_l3.ld>
     $<$<AND:$<VERSION_EQUAL:${TFM_ISOLATION_LEVEL},3>,$<C_COMPILER_ID:IAR>>:${IFX_GENERATED_DIR}/platform/ext/target/infineon/common/toolchain/iar/tfm_isolation_l3.icf>
+    $<$<AND:$<VERSION_EQUAL:${TFM_ISOLATION_LEVEL},3>,$<OR:$<C_COMPILER_ID:ATFE>,$<C_COMPILER_ID:Clang>>>:${IFX_GENERATED_DIR}/platform/ext/target/infineon/common/toolchain/atfe/tfm_isolation_l3.ld>
 )
 
 target_compile_definitions(tfm_s_scatter
