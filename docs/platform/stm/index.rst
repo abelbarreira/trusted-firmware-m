@@ -11,6 +11,7 @@ This document contains SOC and boards supported by stm32.
 
     b_u585i_iot02a/readme.rst
     nucleo_l552ze_q/readme.rst
+    nucleo_u3c5zi_q/readme.rst
     stm32l562e_dk/readme.rst
     stm32h573i_dk/readme.rst
     stm32wba65i-dk/readme.rst
@@ -18,4 +19,4 @@ This document contains SOC and boards supported by stm32.
 
 --------------
 
-*Copyright (c) 2021 - 2025, stmicroelectronics All rights reserved.*
+*Copyright (c) 2021 - 2026, stmicroelectronics All rights reserved.*
