@@ -63,8 +63,7 @@ enum tfm_hal_status_t mailbox_irq_init(void *p_pt,
 
     TFM_COVERITY_DEVIATE_LINE(MISRA_C_2023_Rule_11_6, "Intentional pointer cast")
     if (tfm_multi_core_register_client_id_range(CLIENT_ID_OWNER_MAGIC,
-                                                p_ildi->client_id_base,
-                                                p_ildi->client_id_limit) != 0) {
+                                                p_ildi->source) != 0) {
         return TFM_HAL_ERROR_INVALID_INPUT;
     }
     return TFM_HAL_SUCCESS;
