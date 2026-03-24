@@ -2584,9 +2584,9 @@ void dma350_ch_set_srcmemattr(struct dma350_ch_dev_t *dev, uint8_t memattr,
     dev->cfg.ch_base->CH_SRCTRANSCFG =
         /* Only set Lo, Hi, and Share attributes */
         (dev->cfg.ch_base->CH_SRCTRANSCFG &
-         ((~DMA_CH_SRCTRANSCFG_SRCMEMATTRLO_Msk) |
-          (~DMA_CH_SRCTRANSCFG_SRCMEMATTRHI_Msk) |
-          (~DMA_CH_SRCTRANSCFG_SRCSHAREATTR_Msk))
+         ~(DMA_CH_SRCTRANSCFG_SRCMEMATTRLO_Msk |
+           DMA_CH_SRCTRANSCFG_SRCMEMATTRHI_Msk |
+           DMA_CH_SRCTRANSCFG_SRCSHAREATTR_Msk)
          /* memattr already has Lo and Hi values in correct order */
          ) |
         ((memattr & 0x000000FFUL) << DMA_CH_SRCTRANSCFG_SRCMEMATTRLO_Pos)
@@ -2625,9 +2625,9 @@ void dma350_ch_set_desmemattr(struct dma350_ch_dev_t *dev, uint8_t memattr,
     dev->cfg.ch_base->CH_DESTRANSCFG =
         /* Only set Lo, Hi, and Share attributes */
         (dev->cfg.ch_base->CH_DESTRANSCFG &
-         ((~DMA_CH_DESTRANSCFG_DESMEMATTRLO_Msk) |
-          (~DMA_CH_DESTRANSCFG_DESMEMATTRHI_Msk) |
-          (~DMA_CH_DESTRANSCFG_DESSHAREATTR_Msk))
+         ~(DMA_CH_DESTRANSCFG_DESMEMATTRLO_Msk |
+           DMA_CH_DESTRANSCFG_DESMEMATTRHI_Msk |
+           DMA_CH_DESTRANSCFG_DESSHAREATTR_Msk)
          /* memattr already has Lo and Hi values in correct order */
          ) |
         ((memattr & 0x000000FFUL) << DMA_CH_DESTRANSCFG_DESMEMATTRLO_Pos)
