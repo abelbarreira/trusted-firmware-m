@@ -89,6 +89,11 @@ string(REGEX REPLACE "\\+nofp"          ".no_fp"    TFM_SYSTEM_PROCESSOR_FEATURE
 string(REGEX REPLACE "\\+nomve\\.fp"    ".no_mvefp" TFM_SYSTEM_PROCESSOR_FEATURED "${TFM_SYSTEM_PROCESSOR_FEATURED}")
 string(REGEX REPLACE "\\+nomve"         ".no_mve"   TFM_SYSTEM_PROCESSOR_FEATURED "${TFM_SYSTEM_PROCESSOR_FEATURED}")
 
+if(TFM_SYSTEM_PROCESSOR MATCHES "cortex-m52")
+    # Armclang does not support --cpu=Cortex-M52.no_mve.no_fp so replace it with --cpu=Cortex-M52.no_mvefp.no_fp
+    string(REGEX REPLACE ".no_mve.no_fp" ".no_mvefp.no_fp" TFM_SYSTEM_PROCESSOR_FEATURED "${TFM_SYSTEM_PROCESSOR_FEATURED}")
+endif()
+
 add_link_options(
     --cpu=${TFM_SYSTEM_PROCESSOR_FEATURED}
     --strict
@@ -155,8 +160,12 @@ elseif(${CONFIG_TFM_BRANCH_PROTECTION_FEAT} STREQUAL BRANCH_PROTECTION_BTI)
 endif()
 
 if(NOT ${CONFIG_TFM_BRANCH_PROTECTION_FEAT} STREQUAL BRANCH_PROTECTION_DISABLED)
-    if((TFM_SYSTEM_PROCESSOR MATCHES "cortex-m85") AND
-        (TFM_SYSTEM_ARCHITECTURE STREQUAL "armv8.1-m.main"))
+    if((TFM_SYSTEM_PROCESSOR MATCHES "cortex-m85") OR
+        (TFM_SYSTEM_PROCESSOR MATCHES "cortex-m52"))
+        if(${CMAKE_C_COMPILER_VERSION} VERSION_LESS "6.24")
+            message(WARNING "For BRANCH_PROTECTION please upgrade ArmClang to v6.24 or later")
+        endif()
+
         message(NOTICE "BRANCH_PROTECTION enabled with: ${BRANCH_PROTECTION_OPTIONS}")
 
         string(APPEND CMAKE_C_FLAGS " -mbranch-protection=${BRANCH_PROTECTION_OPTIONS}")
