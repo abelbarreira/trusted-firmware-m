@@ -48,11 +48,11 @@ set(MCUBOOT_VERSION                     "tfm-2.3.0" CACHE STRING    "The version
 
 set(TFM_EXTRAS_REPO_PATH                "DOWNLOAD"  CACHE PATH      "Path to tf-m-extras repo (or DOWNLOAD to fetch automatically")
 set(TFM_EXTRAS_GIT_REMOTE               "https://git.trustedfirmware.org/TF-M/tf-m-extras.git" CACHE STRING "The URL to retrieve tf-m-extras from")
-set(TFM_EXTRAS_REPO_VERSION             "52aa709b"  CACHE STRING    "The version of tf-m-extras to use")
+set(TFM_EXTRAS_REPO_VERSION             "2ac90aff"  CACHE STRING    "The version of tf-m-extras to use")
 
 set(LIB_EVENTLOG_PATH                   "DOWNLOAD"  CACHE PATH      "Path to LibEventLog repo (or DOWNLOAD to fetch automatically")
 set(LIB_EVENTLOG_GIT_REMOTE             "https://git.trustedfirmware.org/shared/libEventLog" CACHE STRING "The URL to retrieve LibEventLog from.")
-set(LIB_EVENTLOG_VERSION                "f459fa60"  CACHE STRING    "The version of LibEventLog to use")
+set(LIB_EVENTLOG_VERSION                "587406db"  CACHE STRING    "The version of LibEventLog to use")
 set(EVENT_LOG_BUFFER_SIZE               "0x170"     CACHE STRING    "Size of event log buffer size")
 
 set(LIB_DTPM_GIT_REMOTE                 "https://git.trustedfirmware.org/shared/libTPM" CACHE STRING "The URL to retrieve LibTPM from.")
