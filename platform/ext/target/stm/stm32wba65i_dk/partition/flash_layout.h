@@ -222,7 +222,7 @@
 /* Number of physical erase sectors per logical FS block */
 #define TFM_HAL_PS_SECTORS_PER_BLOCK  (1)
 /* Smallest flash programmable unit in bytes */
-#define TFM_HAL_PS_PROGRAM_UNIT       (0x10)
+#define TFM_HAL_PS_PROGRAM_UNIT       TFM_HAL_FLASH_PROGRAM_UNIT
 
 /* Internal Trusted Storage (ITS) Service definitions
  * Note: Further documentation of these definitions can be found in the

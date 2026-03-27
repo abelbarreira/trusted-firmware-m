@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------------
 # SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
-# Copyright (c) 2021-2024 STMicroelectronics. All rights reserved.
+# Copyright (c) 2026 STMicroelectronics. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -56,7 +56,7 @@ target_compile_definitions(platform_s
 
 target_sources(platform_s
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/secure/system_stm32wbaxx.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/Device/Source/system_stm32wbaxx.c
         ${STM_COMMON_DIR}/hal/Native_Driver/mpu_armv8m_drv.c
         ${CMAKE_CURRENT_SOURCE_DIR}/hal/Src/stm32wbaxx_hal.c
         ${CMAKE_CURRENT_SOURCE_DIR}/secure/low_level_device.c
@@ -139,7 +139,7 @@ install(FILES
     DESTINATION ${INSTALL_PLATFORM_NS_DIR}/CMSIS_Driver
 )
 install(FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/Device/Source/Templates/system_stm32wbaxx.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Device/Source/system_stm32wbaxx.c
     DESTINATION ${INSTALL_PLATFORM_NS_DIR}/Device/Source/
 )
 
@@ -198,7 +198,7 @@ endif()
         DESTINATION ${CMAKE_INSTALL_PREFIX} )
 
 install(FILES       ${CMAKE_CURRENT_LIST_DIR}/Device/Source/startup_stm32wbaxx_ns.c
-                    ${CMAKE_CURRENT_LIST_DIR}/Device/Source/Templates/system_stm32wbaxx.c
+                    ${CMAKE_CURRENT_LIST_DIR}/Device/Source/system_stm32wbaxx.c
         DESTINATION ${INSTALL_PLATFORM_NS_DIR}/Device/Source)
 
 install(DIRECTORY   ${CMAKE_CURRENT_LIST_DIR}/hal/Inc

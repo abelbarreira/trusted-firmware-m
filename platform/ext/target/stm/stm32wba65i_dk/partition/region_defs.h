@@ -20,6 +20,7 @@
 
 #define S_IMAGE_PRIMARY_PARTITION_OFFSET   (FLASH_AREA_0_OFFSET)
 #define S_IMAGE_SECONDARY_PARTITION_OFFSET (FLASH_AREA_2_OFFSET)
+#define NS_IMAGE_PRIMARY_PARTITION_OFFSET  (FLASH_AREA_1_OFFSET)
 
 #define S_HEAP_SIZE             0x00000C0
 #define S_MSP_STACK_SIZE_INIT   0x0000400
@@ -44,11 +45,11 @@
 
 /* Flash and internal SRAMs base addresses - Non secure aliased */
 #define _FLASH_BASE_NS          (0x08000000) /*!< FLASH(1024 KB) base address */
-#define _SRAM1_BASE_NS          (0x20000000) /*!< SRAM1(64 KB) base address */
+#define _SRAM1_BASE_NS          (0x20000000) /*!< SRAM1(448 KB) base address */
 #define _SRAM2_BASE_NS          (0x20070000) /*!< SRAM2(64 KB) base address */
 /* Flash and internal SRAMs base addresses - Secure aliased */
 #define _FLASH_BASE_S           (0x0C000000) /*!< FLASH(1024 KB) base address */
-#define _SRAM1_BASE_S           (0x30000000) /*!< SRAM1(64 KB) base address */
+#define _SRAM1_BASE_S           (0x30000000) /*!< SRAM1(448 KB) base address */
 #define _SRAM2_BASE_S           (0x30070000) /*!< SRAM2(64 KB) base address */
 
 #define TOTAL_ROM_SIZE          FLASH_TOTAL_SIZE
@@ -81,7 +82,6 @@
 
 #define BL2_DATA_HEADER_SIZE                (0x20)  /*!< Data image header size */
 
-#define NS_IMAGE_PRIMARY_PARTITION_OFFSET FLASH_AREA_1_OFFSET
 
 
 #define IMAGE_S_CODE_SIZE \

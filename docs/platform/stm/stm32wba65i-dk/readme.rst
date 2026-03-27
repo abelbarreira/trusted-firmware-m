@@ -10,7 +10,7 @@ Directory content
 ^^^^^^^^^^^^^^^^^
 
 - stm/common/stm32wbaxx/stm32wbaxx_hal:
-   Content from https://github.com/STMicroelectronics/stm32wbaxx_hal_driver (HAL version - Tags V1.6.0 )
+   Content from https://github.com/STMicroelectronics/stm32wbaxx_hal_driver (HAL version - Tags V1.9.0 )
 
 - stm/common/stm32wbaxx/Device:
    Content from https://github.com/STMicroelectronics/cmsis_device_wba
@@ -71,7 +71,7 @@ in Isolation Level 1.
 
     mkdir build_s && cd build_s
 
-    cmake -S /../tf-m-tests/tests_reg/spe -B . -GNinja -DTFM_PLATFORM=stm/stm32wba65i-dk
+    cmake -S /../tf-m-tests/tests_reg/spe -B . -GNinja -DTFM_PLATFORM=stm/stm32wba65i_dk
          -DTFM_TOOLCHAIN_FILE= /../toolchain_ARMCLANG.cmake
          -DCONFIG_TFM_SOURCE_PATH= /../trusted-firmware-m
          -DTFM_PSA_API=ON -DTFM_ISOLATION_LEVEL=1
@@ -100,7 +100,7 @@ the attestation service in Isolation Level 1 on Linux.
 
     mkdir build_s && cd build_s
 
-    cmake -S /../tf-m-tests/tests_psa_arch/spe -B . -GNinja -DTFM_PLATFORM=stm/stm32wba65i-dk
+    cmake -S /../tf-m-tests/tests_psa_arch/spe -B . -GNinja -DTFM_PLATFORM=stm/stm32wba65i_dk
          -DTFM_TOOLCHAIN_FILE= /../toolchain_ARMCLANG.cmake
          -DCONFIG_TFM_SOURCE_PATH= /../trusted-firmware-m
          -DTFM_PSA_API=ON -DTFM_ISOLATION_LEVEL=1
@@ -139,6 +139,5 @@ In case of target power-off, the TFM_UPDATE.sh script must be run to program bl2
 
 -------------
 
-*Copyright (c) 2021, Arm Limited. All rights reserved.*
-*Copyright (c) 2019, STMicroelectronics. All rights reserved.*
+*Copyright (c) 2026, STMicroelectronics. All rights reserved.*
 *SPDX-License-Identifier: BSD-3-Clause*

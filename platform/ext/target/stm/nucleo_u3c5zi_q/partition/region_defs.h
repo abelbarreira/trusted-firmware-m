@@ -56,23 +56,6 @@
 /* 192 kbytes + 64 Kbytes - BOOT info */
 /* boot info are placed and locked at top of SRAM2  */
 
-/**---------------------------------------------------------------------------
- * STM32U3C5xx SRAM layout (Secure / Non-Secure) as used by TF-M
- *
- * Raw SRAM sizes (from device memory map)
- *   - SRAM1 total      : 0x00030000 (192 KB)
- *   - SRAM2 total      : 0x00010000 ( 64 KB)
-
- *   - Secure RAM:
- *       SRAM1 S: 0x30000000 - 0x3000FFFF  ( 64 KB)
- *       SRAM2 S: 0x30030000 - 0x3003FBFF  ( 63 KB)
- *       Shared boot (S/NS alias): 0x3003FC00 - 0x3003FFFF (1 KB)
- *
- *   - Non-Secure RAM:
- *       SRAM1 NS: 0x20000000 - 0x2001FFFF (128 KB usable)
- *       SRAM2 NS: no dedicated NS RAM; only boot shared alias at 0x2003FC00-0x2003FFFF
- *---------------------------------------------------------------------------
- **/
 #define S_TOTAL_RAM2_SIZE       (_SRAM2_SIZE_MAX) /*! size require for Secure part */
 #define S_TOTAL_RAM1_SIZE       (0x10000)
 #define S_TOTAL_RAM_SIZE        (S_TOTAL_RAM2_SIZE + S_TOTAL_RAM1_SIZE)

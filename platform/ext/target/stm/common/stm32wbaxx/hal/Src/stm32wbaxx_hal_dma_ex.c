@@ -498,11 +498,7 @@ static void DMA_List_BuildNode(DMA_NodeConfTypeDef const *const pNodeConfig,
                                DMA_NodeTypeDef *const pNode);
 static void DMA_List_GetNodeConfig(DMA_NodeConfTypeDef *const pNodeConfig,
                                    DMA_NodeTypeDef const *const pNode);
-#if (__GNUC__ == 11) || (__GNUC__ == 12)
-static __attribute__((noinline)) uint32_t DMA_List_CheckNodesBaseAddresses(DMA_NodeTypeDef const *const pNode1,
-#else
 static uint32_t DMA_List_CheckNodesBaseAddresses(DMA_NodeTypeDef const *const pNode1,
-#endif
                                                  DMA_NodeTypeDef const *const pNode2,
                                                  DMA_NodeTypeDef const *const pNode3);
 static uint32_t DMA_List_CheckNodesTypes(DMA_NodeTypeDef const *const pNode1,
@@ -2148,7 +2144,7 @@ HAL_StatusTypeDef HAL_DMAEx_List_InsertQ(DMA_QListTypeDef *const pSrcQList,
   uint32_t cllr_mask;
   uint32_t cllr_offset;
   DMA_NodeInQInfoTypeDef src_q_node_info;
-  DMA_NodeInQInfoTypeDef dest_q_node_info;
+  DMA_NodeInQInfoTypeDef dest_q_node_info = {0};
 
   /* Check the source and destination queues and the previous node parameters */
   if ((pSrcQList == NULL) || (pDestQList == NULL))
@@ -3759,11 +3755,7 @@ static void DMA_List_GetNodeConfig(DMA_NodeConfTypeDef *const pNodeConfig,
   * @param  pNode3 : Pointer to a DMA_NodeTypeDef structure that contains linked-list node 3 registers configurations.
   * @retval Return 0 when nodes addresses are compatible, 1 otherwise.
   */
-#if (__GNUC__ == 11) || (__GNUC__ == 12)
-static __attribute__((noinline)) uint32_t DMA_List_CheckNodesBaseAddresses(DMA_NodeTypeDef const *const pNode1,
-#else
 static uint32_t DMA_List_CheckNodesBaseAddresses(DMA_NodeTypeDef const *const pNode1,
-#endif
                                                  DMA_NodeTypeDef const *const pNode2,
                                                  DMA_NodeTypeDef const *const pNode3)
 {

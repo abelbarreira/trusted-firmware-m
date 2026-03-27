@@ -1,5 +1,6 @@
 #-------------------------------------------------------------------------------
 # SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
+# Copyright (c) 2026 STMicroelectronics. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #

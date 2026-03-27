@@ -20,7 +20,7 @@ fi
 # Absolute path to this script
 SCRIPT=$(readlink -f $0)
 SCRIPTPATH=`dirname $SCRIPT`
-# copy tfm_ns.bin in the 
+# copy tfm_ns.bin
 cp $SCRIPTPATH/../../build_ns/bin/tfm_ns.bin  $SCRIPTPATH/../../build_s/api_ns/bin
 
 # Absolute path this script
