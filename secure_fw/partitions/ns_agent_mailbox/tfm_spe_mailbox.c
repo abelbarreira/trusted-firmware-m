@@ -201,6 +201,10 @@ static int local_copy_vects(const struct psa_client_params_t *params,
     for (unsigned int i = 0; i < PSA_MAX_IOVEC; i++) {
         if (i < in_len) {
             vectors[idx].in_vec[i] = params->psa_call_params.in_vec[i];
+            if ((vectors[idx].in_vec[i].base == NULL) &&
+                (vectors[idx].in_vec[i].len != 0)) {
+                return MAILBOX_INVAL_PARAMS;
+            }
         } else {
             vectors[idx].in_vec[i].base = 0;
             vectors[idx].in_vec[i].len = 0;
@@ -210,6 +214,10 @@ static int local_copy_vects(const struct psa_client_params_t *params,
     for (unsigned int i = 0; i < PSA_MAX_IOVEC; i++) {
         if (i < out_len) {
             vectors[idx].out_vec[i] = params->psa_call_params.out_vec[i];
+            if ((vectors[idx].out_vec[i].base == NULL) &&
+                (vectors[idx].out_vec[i].len != 0)) {
+                return MAILBOX_INVAL_PARAMS;
+            }
         } else {
             vectors[idx].out_vec[i].base = 0;
             vectors[idx].out_vec[i].len = 0;
