@@ -42,6 +42,10 @@
 #define FATAL_ERR(x)
 #endif /* FATAL_ERR */
 
+#if (defined(__GNUC__) && !defined(__clang__))
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 /**
  * \brief Rounds a value x up to a bound.
  */
