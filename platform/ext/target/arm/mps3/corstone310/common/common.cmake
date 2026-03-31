@@ -33,11 +33,18 @@ if(BL2)
     target_sources(bl2
         PRIVATE
             ${CORSTONE310_COMMON_DIR}/device/source/startup_corstone310.c
-            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/constant_time.c
+            ${TF_PSA_CRYPTO_PATH}/utilities/constant_time.c
             ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher.c
             ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher_wrap.c
             ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_cipher.c
     )
+
+    target_include_directories(bl2
+        PRIVATE
+            ${TF_PSA_CRYPTO_PATH}/utilities
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/include
+    )
+
     target_add_scatter_file(bl2
         $<$<C_COMPILER_ID:ARMClang>:${PLATFORM_DIR}/ext/common/armclang/tfm_common_bl2.sct>
         $<$<C_COMPILER_ID:GNU>:${PLATFORM_DIR}/ext/common/gcc/tfm_common_bl2.ld>

@@ -27,10 +27,16 @@ if(BL2)
     target_sources(bl2
         PRIVATE
             ${CMAKE_CURRENT_LIST_DIR}/device/source/startup_mps4_corstone3xx.c
-            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/constant_time.c
+            ${TF_PSA_CRYPTO_PATH}/utilities/constant_time.c
             ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher.c
             ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher_wrap.c
             ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_cipher.c
+    )
+
+    target_include_directories(bl2
+        PRIVATE
+            ${TF_PSA_CRYPTO_PATH}/utilities
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/include
     )
 
     target_add_scatter_file(bl2
@@ -346,20 +352,26 @@ target_sources(bl1_1_psa_crypto
     PRIVATE
         $<$<NOT:$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>>:${CMAKE_CURRENT_LIST_DIR}/bl1/cc312_rom_crypto.c>
 
-        # MbedTLS cryptography
+        # TF-PSA-Crypto cryptography
         $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${CMAKE_CURRENT_LIST_DIR}/bl1/crypto_mbedcrypto.c>
-        $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/platform.c>
-        $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/memory_buffer_alloc.c>
-        $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/md.c>
+        $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/platform/platform.c>
+        $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/platform/memory_buffer_alloc.c>
+        $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/extras/md.c>
         $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/md5.c>
         $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/aes.c>
         $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cmac.c>
         $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/sha256.c>
-        $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/constant_time.c>
+        $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/utilities/constant_time.c>
         $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_mac.c>
         $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher.c>
         $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher_wrap.c>
         $<$<BOOL:${TFM_BL1_SOFTWARE_CRYPTO}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_cipher.c>
+)
+
+target_include_directories(bl1_1_psa_crypto
+    PRIVATE
+        ${TF_PSA_CRYPTO_PATH}/utilities
+        ${TF_PSA_CRYPTO_PATH}/drivers/builtin/include
 )
 
 #========================= Platform BL1_2 =====================================#

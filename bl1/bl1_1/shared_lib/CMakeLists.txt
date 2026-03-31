@@ -69,6 +69,7 @@ target_include_directories(bl1_1_psa_crypto_interface
         ${CMAKE_SOURCE_DIR}/interface/include
         ${CMAKE_SOURCE_DIR}/interface/include/psa
         ${TF_PSA_CRYPTO_PATH}/core
+        ${TF_PSA_CRYPTO_PATH}/dispatch
         ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src
         ${TF_PSA_CRYPTO_PATH}/drivers/builtin/include
 )
@@ -87,8 +88,8 @@ target_compile_definitions(bl1_1_psa_crypto_interface
 target_sources(bl1_1_psa_crypto
     PRIVATE
         ${CMAKE_SOURCE_DIR}/lib/ext/thin-psa-crypto-core/thin_psa_crypto_core.c
-        ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/platform_util.c
-        ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_util.c
+        ${TF_PSA_CRYPTO_PATH}/platform/platform_util.c
+        ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_util_internal.c
 
         # CryptoCell does not support sha384 and sha512
         ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_hash.c
@@ -96,8 +97,8 @@ target_sources(bl1_1_psa_crypto
 
         # LMS-specific
         $<$<BOOL:${TFM_BL1_2_ENABLE_LMS}>:${CMAKE_CURRENT_SOURCE_DIR}/pq_crypto/pq_crypto_psa.c>
-        $<$<BOOL:${TFM_BL1_2_ENABLE_LMS}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/lmots.c>
-        $<$<BOOL:${TFM_BL1_2_ENABLE_LMS}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/lms.c>
+        $<$<BOOL:${TFM_BL1_2_ENABLE_LMS}>:${TF_PSA_CRYPTO_PATH}/extras/lmots.c>
+        $<$<BOOL:${TFM_BL1_2_ENABLE_LMS}>:${TF_PSA_CRYPTO_PATH}/extras/lms.c>
 )
 
 target_link_libraries(bl1_1_psa_crypto

@@ -272,10 +272,16 @@ target_sources(bl1_1_psa_crypto
     PRIVATE
         ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/sha256.c
         ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/aes.c
-        ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/constant_time.c
+        ${TF_PSA_CRYPTO_PATH}/utilities/constant_time.c
         ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher.c
         ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher_wrap.c
         ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_cipher.c
+)
+
+target_include_directories(bl1_1_psa_crypto
+    PRIVATE
+        ${TF_PSA_CRYPTO_PATH}/utilities
+        ${TF_PSA_CRYPTO_PATH}/drivers/builtin/include
 )
 
 target_sources(platform_bl1_2

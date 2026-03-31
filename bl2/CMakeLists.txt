@@ -70,34 +70,35 @@ set(build_p256m      "$<IF:$<BOOL:${MBEDTLS_P256M_ENABLED}>,$<AND:${is_ec_signat
 list(APPEND BL2_CRYPTO_SRC
     $<$<OR:$<BOOL:${MCUBOOT_USE_PSA_CRYPTO}>,$<BOOL:${MCUBOOT_USE_MBED_TLS}>>:${CMAKE_SOURCE_DIR}/lib/ext/thin-psa-crypto-core/thin_psa_crypto_core.c>
     ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/aes.c
-    ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/platform.c
-    ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/platform_util.c
-    ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/memory_buffer_alloc.c
+    ${TF_PSA_CRYPTO_PATH}/platform/platform.c
+    ${TF_PSA_CRYPTO_PATH}/platform/platform_util.c
+    ${TF_PSA_CRYPTO_PATH}/platform/memory_buffer_alloc.c
     ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_hash.c
     $<${build_sha_256}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/sha256.c>
     $<${build_sha_384}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/sha512.c>
     $<$<AND:${is_ec_signature},$<NOT:${build_p256m}>>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_ecp.c>
-    $<$<AND:${is_ec_signature},$<NOT:${build_p256m}>>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_util.c>
+    $<$<AND:${is_ec_signature},$<NOT:${build_p256m}>>:${TF_PSA_CRYPTO_PATH}/core/psa_util.c>
     $<$<AND:${is_ec_signature},$<NOT:${build_p256m}>>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/ecp.c>
     $<$<AND:${is_ec_signature},$<NOT:${build_p256m}>>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/ecp_curves.c>
     $<$<AND:${is_ec_signature},$<NOT:${build_p256m}>>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/ecdsa.c>
     $<$<AND:${is_ec_signature},$<NOT:${build_p256m}>>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/bignum.c>
     $<$<AND:${is_ec_signature},$<NOT:${build_p256m}>>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/bignum_core.c>
-    $<$<AND:${is_ec_signature},$<NOT:${build_p256m}>>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/constant_time.c>
+    $<$<AND:${is_ec_signature},$<NOT:${build_p256m}>>:${TF_PSA_CRYPTO_PATH}/utilities/constant_time.c>
     $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_rsa.c>
-    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_util.c>
+    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/core/psa_util.c>
     $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/rsa.c>
     $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/rsa_alt_helpers.c>
     $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/bignum.c>
     $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/bignum_core.c>
-    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/constant_time.c>
-    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/asn1parse.c>
-    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/asn1write.c>
-    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/md.c>
+    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_util_internal.c>
+    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/utilities/constant_time.c>
+    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/utilities/asn1parse.c>
+    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/utilities/asn1write.c>
+    $<${is_rsa_signature}:${TF_PSA_CRYPTO_PATH}/extras/md.c>
     $<$<AND:${is_ec_signature},${build_p256m}>:${TF_PSA_CRYPTO_PATH}/drivers/p256-m/p256-m_driver_entrypoints.c>
     $<$<AND:${is_ec_signature},${build_p256m}>:${TF_PSA_CRYPTO_PATH}/drivers/p256-m/p256-m/p256-m.c>
     $<$<BOOL:${MCUBOOT_ENCRYPT_KW}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/nist_kw.c>
-    $<$<BOOL:${MCUBOOT_ENCRYPT_KW}>:${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/constant_time.c>
+    $<$<BOOL:${MCUBOOT_ENCRYPT_KW}>:${TF_PSA_CRYPTO_PATH}/utilities/constant_time.c>
     # Include __weak stub implementation, serving as a fallback for random number generation in case no other RNG is provided.
     $<$<NOT:$<BOOL:${CRYPTO_HW_ACCELERATOR}>>:src/psa_stub_rng.c>
 )
@@ -114,6 +115,8 @@ target_include_directories(bl2_crypto
     PUBLIC
         ${TF_PSA_CRYPTO_PATH}/core
         ${TF_PSA_CRYPTO_PATH}/include
+        ${TF_PSA_CRYPTO_PATH}/dispatch
+        ${TF_PSA_CRYPTO_PATH}/utilities
         ${TF_PSA_CRYPTO_PATH}/drivers/builtin/include
         ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src
         ${CMAKE_CURRENT_SOURCE_DIR}/ext/mcuboot/include
