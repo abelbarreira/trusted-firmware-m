@@ -1,7 +1,7 @@
-From df9b5ca8182418b077b6727016b72f07d33bb9f1 Mon Sep 17 00:00:00 2001
+From ffc45ca016b5980bf7d3cae76dbaafa09cea6770 Mon Sep 17 00:00:00 2001
 From: Antonio de Angelis <Antonio.deAngelis@arm.com>
 Date: Thu, 12 Mar 2026 13:41:43 +0000
-Subject: [PATCH 07/16] P256M: Add option to force not use of asm
+Subject: [PATCH 06/15] P256M: Add option to force not use of asm
 
 Add an option to let the compiler generate the assembly
 code for u32_muladd64(), especially for MinSizeRel and
@@ -13,7 +13,7 @@ Signed-off-by: Antonio de Angelis <antonio.deangelis@arm.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/p256-m/p256-m/p256-m.c b/drivers/p256-m/p256-m/p256-m.c
-index 42c35b5..558a8bc 100644
+index 42c35b5bf..558a8bc95 100644
 --- a/drivers/p256-m/p256-m/p256-m.c
 +++ b/drivers/p256-m/p256-m/p256-m.c
 @@ -197,7 +197,7 @@ static uint64_t u32_muladd64(uint32_t x, uint32_t y, uint32_t z, uint32_t t);
@@ -26,5 +26,5 @@ index 42c35b5..558a8bc 100644
      ( __ARM_ARCH_PROFILE == 77 || __ARM_ARCH_PROFILE == 65 ) /* 'M' or 'A' */ && \
      !defined(__aarch64__)
 -- 
-2.43.0
+2.34.1
 

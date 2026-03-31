@@ -1,7 +1,7 @@
-From 19e3d63ba4d1f78421d88a72b3c745f8481ae7ae Mon Sep 17 00:00:00 2001
+From 5a0dc48199f81e04a8a56bdd7017592dac6590a3 Mon Sep 17 00:00:00 2001
 From: Amjad Ouled-Ameur <amjad.ouled-ameur@arm.com>
 Date: Thu, 12 Mar 2026 13:41:43 +0000
-Subject: [PATCH 08/16] psa: mac: only call memset if key_length is less than
+Subject: [PATCH 07/15] psa: mac: only call memset if key_length is less than
  block size
 
 In case key_length is equal to block_size, memset would be called with a
@@ -18,7 +18,7 @@ Signed-off-by: Amjad Ouled-Ameur <amjad.ouled-ameur@arm.com>
  1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/builtin/src/psa_crypto_mac.c b/drivers/builtin/src/psa_crypto_mac.c
-index 82a3a79..ed9d337 100644
+index 82a3a79da..ed9d33738 100644
 --- a/drivers/builtin/src/psa_crypto_mac.c
 +++ b/drivers/builtin/src/psa_crypto_mac.c
 @@ -78,14 +78,20 @@ static psa_status_t psa_hmac_setup_internal(
@@ -45,5 +45,5 @@ index 82a3a79..ed9d337 100644
      status = psa_hash_setup(&hmac->hash_ctx, hash_alg);
      if (status != PSA_SUCCESS) {
 -- 
-2.43.0
+2.34.1
 

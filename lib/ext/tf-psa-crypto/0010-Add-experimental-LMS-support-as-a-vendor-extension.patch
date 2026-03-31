@@ -1,7 +1,7 @@
-From a1f5b663f4afb838026e0929075580c09df3d5c8 Mon Sep 17 00:00:00 2001
+From ea24b36d3aa804c29a9e66da5500cb35a053ceac Mon Sep 17 00:00:00 2001
 From: David Vincze <david.vincze@arm.com>
 Date: Thu, 12 Mar 2026 13:41:43 +0000
-Subject: [PATCH 11/16] Add experimental LMS support as a vendor extension
+Subject: [PATCH 10/15] Add experimental LMS support as a vendor extension
 
 Add experimental support for PSA_ALG_LMS to PSA as a vendor algorithm
 and extend the PSA_ALG_IS_VENDOR_HASH_AND_SIGN macro accordingly.
@@ -12,10 +12,10 @@ Signed-off-by: David Vincze <david.vincze@arm.com>
  1 file changed, 19 insertions(+), 1 deletion(-)
 
 diff --git a/include/psa/crypto_extra.h b/include/psa/crypto_extra.h
-index f80889c..9500bf9 100644
+index cc887b021..5aa6174d1 100644
 --- a/include/psa/crypto_extra.h
 +++ b/include/psa/crypto_extra.h
-@@ -219,11 +219,29 @@ void mbedtls_psa_get_stats(mbedtls_psa_stats_t *stats);
+@@ -238,11 +238,29 @@ void mbedtls_psa_get_stats(mbedtls_psa_stats_t *stats);
      (PSA_ALG_IS_DSA(alg) && !PSA_ALG_DSA_IS_DETERMINISTIC(alg))
  
  
@@ -47,5 +47,5 @@ index f80889c..9500bf9 100644
  /**@}*/
  
 -- 
-2.43.0
+2.34.1
 

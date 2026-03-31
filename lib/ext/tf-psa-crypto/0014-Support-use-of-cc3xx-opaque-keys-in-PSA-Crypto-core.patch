@@ -1,7 +1,7 @@
-From 5a9b0db63ba967b167a8696efd178d74b29d67ef Mon Sep 17 00:00:00 2001
+From c3f1bfe03fee0871e3cbf7d5fb5f2d6c1e57283b Mon Sep 17 00:00:00 2001
 From: Amjad Ouled-Ameur <amjad.ouled-ameur@arm.com>
 Date: Thu, 12 Mar 2026 13:41:43 +0000
-Subject: [PATCH 15/16] Support use of cc3xx opaque keys in PSA Crypto core
+Subject: [PATCH 14/15] Support use of cc3xx opaque keys in PSA Crypto core
 
 This allows passing cc3xx opaque keys to the PSA Core seamlessly via the
 existing TF-M builtin key platform hooks.
@@ -13,7 +13,7 @@ Signed-off-by: Amjad Ouled-Ameur <amjad.ouled-ameur@arm.com>
  2 files changed, 17 insertions(+), 1 deletion(-)
 
 diff --git a/core/psa_crypto.c b/core/psa_crypto.c
-index a7ee0f1..565d0e4 100644
+index 11de5071d..273ae81ed 100644
 --- a/core/psa_crypto.c
 +++ b/core/psa_crypto.c
 @@ -76,6 +76,10 @@
@@ -27,7 +27,7 @@ index a7ee0f1..565d0e4 100644
  #if defined(MBEDTLS_PSA_BUILTIN_ALG_HKDF) ||          \
      defined(MBEDTLS_PSA_BUILTIN_ALG_HKDF_EXTRACT) ||  \
      defined(MBEDTLS_PSA_BUILTIN_ALG_HKDF_EXPAND)
-@@ -1127,8 +1131,11 @@ static psa_status_t psa_get_and_lock_transparent_key_slot_with_policy(
+@@ -1116,8 +1120,11 @@ static psa_status_t psa_get_and_lock_transparent_key_slot_with_policy(
  
      if (psa_key_lifetime_is_external((*p_slot)->attr.lifetime)
  #if defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER)
@@ -41,10 +41,10 @@ index a7ee0f1..565d0e4 100644
          psa_unregister_read_under_mutex(*p_slot);
          *p_slot = NULL;
 diff --git a/core/psa_crypto_driver_wrappers_no_static.c b/core/psa_crypto_driver_wrappers_no_static.c
-index 55baad4..1e6997b 100644
+index 3bdbf440e..40145b92d 100644
 --- a/core/psa_crypto_driver_wrappers_no_static.c
 +++ b/core/psa_crypto_driver_wrappers_no_static.c
-@@ -50,6 +50,9 @@
+@@ -54,6 +54,9 @@
  #define PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT
  #endif
  #include "tfm_builtin_key_loader.h"
@@ -54,7 +54,7 @@ index 55baad4..1e6997b 100644
  #endif /* PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER */
  
  #if defined(PSA_CRYPTO_DRIVER_CC3XX)
-@@ -133,6 +136,9 @@ psa_status_t psa_driver_wrapper_get_key_buffer_size(
+@@ -137,6 +140,9 @@ psa_status_t psa_driver_wrapper_get_key_buffer_size(
  
  #if defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER)
          case TFM_BUILTIN_KEY_LOADER_KEY_LOCATION:
@@ -64,7 +64,7 @@ index 55baad4..1e6997b 100644
              return tfm_builtin_key_loader_get_key_buffer_size(psa_get_key_id(attributes),
                                                                key_buffer_size);
  #endif /* PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER */
-@@ -262,6 +268,9 @@ psa_status_t psa_driver_wrapper_get_builtin_key(
+@@ -266,6 +272,9 @@ psa_status_t psa_driver_wrapper_get_builtin_key(
  
  #if defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER)
          case TFM_BUILTIN_KEY_LOADER_KEY_LOCATION:
@@ -75,5 +75,5 @@ index 55baad4..1e6997b 100644
                          slot_number,
                          attributes,
 -- 
-2.43.0
+2.34.1
 
