@@ -102,14 +102,6 @@ endif()
 if (TFM_PARTITION_CRYPTO)
     install(FILES       ${INTERFACE_INC_DIR}/psa/README.rst
                         ${INTERFACE_INC_DIR}/psa/crypto.h
-                        ${INTERFACE_INC_DIR}/psa/crypto_adjust_auto_enabled.h
-                        ${INTERFACE_INC_DIR}/psa/crypto_adjust_config_dependencies.h
-                        ${INTERFACE_INC_DIR}/psa/crypto_adjust_config_derived.h
-                        ${INTERFACE_INC_DIR}/psa/crypto_adjust_config_key_pair_types.h
-                        ${INTERFACE_INC_DIR}/psa/crypto_adjust_config_synonyms.h
-                        ${INTERFACE_INC_DIR}/psa/crypto_builtin_composites.h
-                        ${INTERFACE_INC_DIR}/psa/crypto_builtin_key_derivation.h
-                        ${INTERFACE_INC_DIR}/psa/crypto_builtin_primitives.h
                         ${INTERFACE_INC_DIR}/psa/crypto_compat.h
                         ${INTERFACE_INC_DIR}/psa/crypto_driver_common.h
                         ${INTERFACE_INC_DIR}/psa/crypto_driver_contexts_composites.h
