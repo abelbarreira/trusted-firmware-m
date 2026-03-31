@@ -56,8 +56,10 @@ static char tfpsacrypto_version_full[20];
  * \brief Static buffer to be used by Mbed Crypto for memory allocations
  *
  */
+#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
 #include "config_engine_buf.h"
 static uint8_t mbedtls_mem_buf[CRYPTO_ENGINE_BUF_SIZE] = {0};
+#endif
 
 /* Make sure the library won't print anything through mbedtls_printf */
 static int null_printf(const char *fmt, ...)
@@ -86,15 +88,21 @@ char *tfm_crypto_library_get_info(void)
 
 psa_status_t tfm_crypto_core_library_init(void)
 {
+#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
     /* Initialise the Mbed Crypto memory allocator to use static memory
      * allocation from the provided buffer instead of using the heap
      */
     mbedtls_memory_buffer_alloc_init(mbedtls_mem_buf,
                                      CRYPTO_ENGINE_BUF_SIZE);
+#endif
 
     mbedtls_platform_set_printf(null_printf);
 
+#if defined(MBEDTLS_MEMORY_BUFFER_ALLOC_C)
     VERBOSE("[Crypto] Internal heap size is %d bytes\n", sizeof(mbedtls_mem_buf));
+#else
+    VERBOSE("[Crypto] No internal heap");
+#endif
 
     return PSA_SUCCESS;
 }
