@@ -63,3 +63,6 @@ tfm_invalid_config(DEFINED RSE_TESTS_TP_MODE AND NOT (RSE_TESTS_TP_MODE STREQUAL
 
 tfm_invalid_config(TFM_PARTITION_RSE_IMAGE_VERIFICATION AND NOT PSA_FRAMEWORK_HAS_MM_IOVEC)
 
+########################## Encrypted images in BL2 #############################
+
+tfm_invalid_config(MCUBOOT_ENC_IMAGES AND NOT (MCUBOOT_UPGRADE_STRATEGY STREQUAL "RAM_LOAD"))
