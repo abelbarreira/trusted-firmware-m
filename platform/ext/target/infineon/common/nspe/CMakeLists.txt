@@ -68,6 +68,11 @@ if(IFX_NS_INTERFACE_MAILBOX)
                 ${INTERFACE_SRC_DIR}/multi_core/platform_ns_mailbox.c
                 ${INTERFACE_SRC_DIR}/multi_core/platform_multicore.c
         )
+
+        target_link_libraries(tfm_api_ns_mailbox
+            PUBLIC
+                platform_ns
+        )
     endif()
 endif()
 
