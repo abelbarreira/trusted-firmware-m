@@ -11,7 +11,7 @@ find_package(Python3)
 add_executable(provisioning_bundle)
 
 if(${TFM_DUMMY_PROVISIONING})
-    include(${CMAKE_SOURCE_DIR}/platform/ext/target/arm/mps3/common/provisioning/provisioning_config.cmake)
+    include(${CMAKE_SOURCE_DIR}/platform/ext/target/armchina/mps3/common/provisioning/provisioning_config.cmake)
 else()
     include("${PROVISIONING_KEYS_CONFIG}" OPTIONAL RESULT_VARIABLE PROVISIONING_KEYS_CONFIG_PATH)
     if(NOT PROVISIONING_KEYS_CONFIG_PATH)

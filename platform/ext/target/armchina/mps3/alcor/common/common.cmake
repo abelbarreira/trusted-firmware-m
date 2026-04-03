@@ -250,13 +250,13 @@ target_sources(tfm_s
 )
 
 if(NOT PLATFORM_DEFAULT_PROVISIONING)
-    add_subdirectory(${PLATFORM_DIR}/ext/target/arm/mps3/common/provisioning provisioning)
+    add_subdirectory(${PLATFORM_DIR}/ext/common/provisioning_bundle provisioning)
 endif()
 
 #========================= platform_region_defs ===============================#
 target_compile_definitions(platform_region_defs
     INTERFACE
-FLASH_S_PARTITION_SIZE=${FLASH_S_PARTITION_SIZE}
+        FLASH_S_PARTITION_SIZE=${FLASH_S_PARTITION_SIZE}
         FLASH_NS_PARTITION_SIZE=${FLASH_NS_PARTITION_SIZE}
         PROVISIONING_CODE_PADDED_SIZE=${PROVISIONING_CODE_PADDED_SIZE}
         PROVISIONING_VALUES_PADDED_SIZE=${PROVISIONING_VALUES_PADDED_SIZE}
