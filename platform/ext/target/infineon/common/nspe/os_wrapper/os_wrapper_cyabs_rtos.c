@@ -265,7 +265,7 @@ uint32_t os_wrapper_get_tick(void)
     return ticks;
 }
 
-bool os_wrapper_is_kernel_running(void)
+bool os_wrapper_is_kernel_started(void)
 {
     cy_scheduler_state_t state = CY_SCHEDULER_STATE_UNKNOWN;
     cy_rslt_t ret = cy_rtos_scheduler_get_state(&state);

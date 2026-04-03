@@ -46,7 +46,7 @@ const void *tfm_ns_mailbox_os_get_task_handle(void)
 
 void tfm_ns_mailbox_os_wait_reply(void)
 {
-    if (!os_wrapper_is_kernel_running()) {
+    if (!os_wrapper_is_kernel_started()) {
         /* Enable IRQ that can be disabled by FreeRTOS while kernel is not running */
         uint32_t basepri = __get_BASEPRI();
         __set_BASEPRI(0x00);
@@ -64,7 +64,7 @@ void tfm_ns_mailbox_os_wait_reply(void)
 
 void tfm_ns_mailbox_os_wake_task_isr(const void *task_handle)
 {
-    if (!os_wrapper_is_kernel_running()) {
+    if (!os_wrapper_is_kernel_started()) {
         return;
     }
 
@@ -145,7 +145,7 @@ int32_t tfm_ns_mailbox_os_lock_init(void)
 
 int32_t tfm_ns_mailbox_os_lock_acquire(void)
 {
-    if (!os_wrapper_is_kernel_running()) {
+    if (!os_wrapper_is_kernel_started()) {
         return MAILBOX_SUCCESS;
     }
 
@@ -155,7 +155,7 @@ int32_t tfm_ns_mailbox_os_lock_acquire(void)
 
 int32_t tfm_ns_mailbox_os_lock_release(void)
 {
-    if (!os_wrapper_is_kernel_running()) {
+    if (!os_wrapper_is_kernel_started()) {
         return MAILBOX_SUCCESS;
     }
 
