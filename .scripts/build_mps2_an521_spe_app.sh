@@ -10,7 +10,11 @@ SCRIPT_DIR=$(dirname "$0")
 ROOT_DIR="$SCRIPT_DIR/.."
 
 TFM_ROOT=$(realpath "$ROOT_DIR")
+TFM_PLATFORM_SERIES="mps2"
+TFM_PLATFORM_NAME="an521"
+TFM_PLATFORM_PATH="arm/$TFM_PLATFORM_SERIES/$TFM_PLATFORM_NAME"
 TFM_TESTS_REG_DIR=$(realpath "$TFM_ROOT/../tf-m-tests/tests_reg") # Checked out with lib/ext/tf-m-tests/version.txt
+MCUBOOT_LOCAL_PATH=$(realpath "$TFM_ROOT/../mcuboot") # Checked out with config/config_base.cmake (tfm-2.3.0)
 SPE_API_NS_DIR="$TFM_ROOT/build/api_ns"
 NS_TOOLCHAIN_FILE="$SPE_API_NS_DIR/cmake/toolchain_ns_GNUARM.cmake"
 PYTHON_BIN="$TFM_ROOT/.venv/bin/python3"
@@ -22,15 +26,20 @@ set -e
 
 pushd "$ROOT_DIR" > /dev/null
 
-if [ ! -d "$TFM_TESTS_REG_DIR" ]; then
-    echo "Missing tf-m-tests at: $TFM_TESTS_REG_DIR"
-    exit 1
-fi
-
 if [ ! -x "${CROSS_COMPILE_PREFIX}-gcc" ]; then
     echo "Missing Arm GNU toolchain compiler at: ${CROSS_COMPILE_PREFIX}-gcc"
     echo "Install Arm GNU Toolchain 14.2.Rel1 under:"
     echo "  $GNUARM_BIN_DIR"
+    exit 1
+fi
+
+if [ ! -d "$MCUBOOT_LOCAL_PATH" ]; then
+    echo "Missing local MCUboot checkout at: $MCUBOOT_LOCAL_PATH"
+    exit 1
+fi
+
+if [ ! -d "$TFM_TESTS_REG_DIR" ]; then
+    echo "Missing tf-m-tests at: $TFM_TESTS_REG_DIR"
     exit 1
 fi
 
@@ -48,8 +57,9 @@ echo
 rm -rf build
 
 cmake -S . -B build \
-    -DTFM_PLATFORM=arm/mps2/an521 \
+    -DTFM_PLATFORM="$TFM_PLATFORM_PATH" \
     -DMCUBOOT_IMAGE_NUMBER=1 \
+    -DMCUBOOT_PATH="$MCUBOOT_LOCAL_PATH" \
     -DCMAKE_BUILD_TYPE=Debug \
     -DTFM_BL2_LOG_LEVEL=LOG_LEVEL_INFO \
     -DTFM_SPM_LOG_LEVEL=LOG_LEVEL_INFO \
@@ -81,7 +91,7 @@ echo Starting QEMU
 echo
 
 qemu-system-arm \
-    -machine mps2-an521 \
+    -machine "$TFM_PLATFORM_SERIES-$TFM_PLATFORM_NAME" \
     -cpu cortex-m33 \
     -nographic \
     -monitor none \
