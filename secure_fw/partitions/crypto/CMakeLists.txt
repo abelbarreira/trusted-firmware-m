@@ -204,7 +204,7 @@ target_link_libraries(${TF_PSA_CRYPTO_TARGET_PREFIX}tfpsacrypto
         platform_common_interface
     )
 
-############################### TF-PSA-Crypto internal drivers #################
+############################### TF-PSA-Crypto internal targets #################
 
 target_compile_definitions(${TF_PSA_CRYPTO_TARGET_PREFIX}p256-m
     PRIVATE
@@ -215,29 +215,25 @@ target_compile_definitions(${TF_PSA_CRYPTO_TARGET_PREFIX}p256-m
         MULADD64_IGNORE_ASM
 )
 
-# FPU flags for p256-m
-target_compile_options(${TF_PSA_CRYPTO_TARGET_PREFIX}p256-m
-    PRIVATE
-        ${COMPILER_CP_FLAG}
+set(_tfpsa_internal_targets
+    ${TF_PSA_CRYPTO_TARGET_PREFIX}p256-m
+    ${TF_PSA_CRYPTO_TARGET_PREFIX}builtin
+    ${TF_PSA_CRYPTO_TARGET_PREFIX}everest
+    ${TF_PSA_CRYPTO_TARGET_PREFIX}platform
+    ${TF_PSA_CRYPTO_TARGET_PREFIX}pqcp
+    ${TF_PSA_CRYPTO_TARGET_PREFIX}utilities
+    ${TF_PSA_CRYPTO_TARGET_PREFIX}extras
 )
 
-# FPU flags for builtin
-target_compile_options(${TF_PSA_CRYPTO_TARGET_PREFIX}builtin
-    PRIVATE
-        ${COMPILER_CP_FLAG}
-)
-
-# FPU flags for everest
-target_compile_options(${TF_PSA_CRYPTO_TARGET_PREFIX}everest
-    PRIVATE
-        ${COMPILER_CP_FLAG}
-)
-
-# Passing TF-PSA-Crypto configuration and required include paths to the driver targets
-target_link_libraries(${TF_PSA_CRYPTO_TARGET_PREFIX}utilities PRIVATE crypto_service_tfpsacrypto_config)
-target_link_libraries(${TF_PSA_CRYPTO_TARGET_PREFIX}platform  PRIVATE crypto_service_tfpsacrypto_config)
-target_link_libraries(${TF_PSA_CRYPTO_TARGET_PREFIX}pqcp      PRIVATE crypto_service_tfpsacrypto_config)
-target_link_libraries(${TF_PSA_CRYPTO_TARGET_PREFIX}extras    PRIVATE crypto_service_tfpsacrypto_config)
-target_link_libraries(${TF_PSA_CRYPTO_TARGET_PREFIX}builtin   PRIVATE crypto_service_tfpsacrypto_config)
-target_link_libraries(${TF_PSA_CRYPTO_TARGET_PREFIX}p256-m    PRIVATE crypto_service_tfpsacrypto_config)
-target_link_libraries(${TF_PSA_CRYPTO_TARGET_PREFIX}everest   PRIVATE crypto_service_tfpsacrypto_config)
+foreach(_tfpsa_target ${_tfpsa_internal_targets})
+    # Passing TF-PSA-Crypto configuration and required include paths to internal targets
+    target_link_libraries(${_tfpsa_target}
+        PRIVATE
+            crypto_service_tfpsacrypto_config
+    )
+    # Propagating FPU flags to internal targets
+    target_compile_options(${_tfpsa_target}
+        PRIVATE
+            ${COMPILER_CP_FLAG}
+    )
+endforeach()
