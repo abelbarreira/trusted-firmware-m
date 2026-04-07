@@ -1,0 +1,21 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "cSpell.language": "en",
+        "task.autoDetect": "off",
+        "editor.detectIndentation": false,
+        "editor.formatOnSave": true,
+        "files.autoSave": "onFocusChange",
+        "[markdown]": {
+            "editor.defaultFormatter": "yzhang.markdown-all-in-one"
+        },
+        "markdown.extension.tableFormatter.enabled": true,
+        "markdown.extension.tableFormatter.normalizeIndentation": true,
+        "markdown.extension.showActionButtons": false,
+        "python.terminal.activateEnvironment": false, // No auto-activate env in the terminal
+    }
+}

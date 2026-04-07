@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Setup Python",
+            "type": "process",
+            "command": ".scripts/setup_python.sh",
+            "options": {
+                "statusbar": {
+                    "hide": false
+                }
+            }
+        },
+        {
+            "label": "Build MPS2 AN521 SPE APP",
+            "type": "process",
+            "command": ".scripts/build_mps2_an521_spe_app.sh",
+            "options": {
+                "statusbar": {
+                    "hide": false
+                }
+            }
+        },
+    ]
+}
