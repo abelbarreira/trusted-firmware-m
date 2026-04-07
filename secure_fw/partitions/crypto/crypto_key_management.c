@@ -68,6 +68,16 @@ psa_status_t tfm_crypto_key_management_interface(psa_invec in_vec[],
         *key_id = CRYPTO_LIBRARY_GET_KEY_ID(library_key);
     }
     break;
+    case TFM_CRYPTO_ABANDONED_OPEN_KEY_SID:
+    {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+    break;
+    case TFM_CRYPTO_ABANDONED_CLOSE_KEY_SID:
+    {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+    break;
     case TFM_CRYPTO_DESTROY_KEY_SID:
     {
         status = psa_destroy_key(library_key);
