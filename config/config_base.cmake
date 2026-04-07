@@ -1,7 +1,5 @@
 #-------------------------------------------------------------------------------
 # SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
-# Copyright (c) 2022-2024 Cypress Semiconductor Corporation (an Infineon company)
-# or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -41,10 +39,11 @@ set(TF_PSA_CRYPTO_VERSION               "v1.1.0"    CACHE STRING    "The version
 set(TF_PSA_CRYPTO_FORCE_PATCH           OFF         CACHE BOOL      "Always apply TF-PSA-Crypto patches")
 set(TF_PSA_CRYPTO_GIT_REMOTE            "https://github.com/Mbed-TLS/TF-PSA-Crypto" CACHE STRING "The URL to retrieve TF-PSA-Crypto from.")
 
-set(MCUBOOT_PATH                        "DOWNLOAD"  CACHE PATH      "Path to MCUboot (or DOWNLOAD to fetch automatically")
+set(MCUBOOT_PATH                        "DOWNLOAD"   CACHE PATH     "Path to MCUboot (or DOWNLOAD to fetch automatically")
+set(MCUBOOT_VERSION                     "v2.4.0-rc1" CACHE STRING   "The version of MCUboot to use")
 set(MCUBOOT_GIT_REMOTE                  "https://github.com/mcu-tools/mcuboot.git" CACHE STRING "The URL to retrieve MCUboot from.")
+set(MCUBOOT_PATCH_DIR                   "${CMAKE_SOURCE_DIR}/lib/ext/mcuboot"      CACHE PATH   "Path to local folder which contains patches for MCUboot")
 set(MCUBOOT_FORCE_PATCH                 OFF         CACHE BOOL      "Always apply MCUboot patches")
-set(MCUBOOT_VERSION                     "tfm-2.3.0" CACHE STRING    "The version of MCUboot to use")
 
 set(TFM_EXTRAS_REPO_PATH                "DOWNLOAD"  CACHE PATH      "Path to tf-m-extras repo (or DOWNLOAD to fetch automatically")
 set(TFM_EXTRAS_GIT_REMOTE               "https://git.trustedfirmware.org/TF-M/tf-m-extras.git" CACHE STRING "The URL to retrieve tf-m-extras from")

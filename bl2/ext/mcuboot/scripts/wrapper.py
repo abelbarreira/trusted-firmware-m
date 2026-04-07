@@ -11,6 +11,7 @@ import re
 import os
 import sys
 import click
+from inspect import signature
 
 # Add the cwd to the path so that if there is a version of imgtool in there then
 # it gets used over the system imgtool. Used so that imgtool from upstream
@@ -139,7 +140,14 @@ def wrap(key, align, version, header_size, pad_header, layout, pad, confirm,
     img.load(infile)
     if len(psa_key_ids) > 0:
         print("wrapper.py: PSA key ids provided: " + ", ".join(hex(x) for x in psa_key_ids))
-        img.set_key_ids(psa_key_ids)
+        # The version of imgtool being used may vary depending on the platform
+        # configuration, and the Image class may have different methods for setting key IDs.
+        if hasattr(img, 'set_key_ids'):
+            img.set_key_ids(psa_key_ids)
+        elif hasattr(img, 'set_key_id'):
+            img.set_key_id(psa_key_ids[0])
+        else:
+            raise click.UsageError("PSA key IDs provided but the image object does not support setting key IDs.")
 
     extra_tlvs = {}
     for tlv in extra_tlv:
@@ -171,9 +179,27 @@ def wrap(key, align, version, header_size, pad_header, layout, pad, confirm,
             # FIXME
             raise click.UsageError("Signing and encryption must use the same "
                                    "type of key")
-    img.create(keys, public_key_format, enckey, dependencies, record_sw_type,
-               None, encrypt_keylen=int(encrypt_keylen),
-               extra_tlvs=extra_tlvs)
+
+    # The version of imgtool being used may vary depending on the platform
+    # configuration, and the 'create' function may have different parameters.
+    # Check the signature of the function to determine how to pass the key(s)
+    # and extra TLVs.
+    create_params = signature(img.create).parameters
+
+    # If the 'create' function supports multiple keys, pass the list of keys.
+    # Otherwise, pass only the first key.
+    if keys is not None:
+        key_input = keys if "keys" in create_params else keys[0]
+    else:
+        key_input = keys # None
+    # Conditionally pass the dictionary of TLVs if the 'create' function
+    # supports extra TLVs.
+    kwargs = {}
+    if "extra_tlvs" in create_params and extra_tlvs is not None:
+        kwargs["extra_tlvs"] = extra_tlvs
+
+    img.create(key_input, public_key_format, enckey, dependencies, record_sw_type,
+                   None, encrypt_keylen=int(encrypt_keylen), **kwargs)
     img.save(outfile, hex_addr)
 
 def main():

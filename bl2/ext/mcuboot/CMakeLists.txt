@@ -12,7 +12,7 @@ include(hex_generator)
 fetch_remote_library(
     LIB_NAME                mcuboot
     LIB_SOURCE_PATH_VAR     MCUBOOT_PATH
-    LIB_PATCH_DIR           ${CMAKE_SOURCE_DIR}/lib/ext/mcuboot
+    LIB_PATCH_DIR           ${MCUBOOT_PATCH_DIR}
     LIB_FORCE_PATCH         ${MCUBOOT_FORCE_PATCH}
     FETCH_CONTENT_ARGS
         GIT_REPOSITORY      ${MCUBOOT_GIT_REMOTE}
