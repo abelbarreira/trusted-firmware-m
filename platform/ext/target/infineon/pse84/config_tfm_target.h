@@ -28,7 +28,7 @@
 #endif
 
 /* Define NR_MULTI_CALL_CHILD for tests where it is needed. */
-#if defined(IFX_MTB_SRF) && defined(TFM_MULTI_CORE_TEST) && !IFX_LINKER_SCRIPT
+#if IFX_MTB_MAILBOX && defined(TFM_MULTI_CORE_TEST) && !IFX_LINKER_SCRIPT
 #include "mtb_srf_config.h"
 
 /* NR_MULTI_CALL_CHILD: set to 2 * MTB_SRF_POOL_SIZE to produce a heavier
