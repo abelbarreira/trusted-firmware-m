@@ -26,12 +26,11 @@
 #define AA64nAA32_MASK (1 << 3)
 
 #ifdef EXTERNAL_SYSTEM_SUPPORT
-void tfm_external_system_boot()
+void tfm_external_system_boot(void)
 {
     volatile uint32_t *ext_sys_reset_ctl_reg = (uint32_t *)(CORSTONE1000_EXT_SYS_RESET_REG);
 
-    /* de-assert CPU_WAIT signal*/
-    *ext_sys_reset_ctl_reg = 0x0;
+    *ext_sys_reset_ctl_reg &= ~(CORSTONE1000_EXT_SYS_RESET_REG_CPUWAIT_Msk);
 }
 #endif
 
