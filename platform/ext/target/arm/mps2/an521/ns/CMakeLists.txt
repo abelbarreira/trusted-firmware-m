@@ -19,9 +19,8 @@ target_sources(platform_ns
         cmsis_core/startup_an521.c
         cmsis_core/system_core_init.c
         retarget/platform_retarget_dev.c
-    INTERFACE
-        $<$<BOOL:${TEST_NS_FPU}>:${CMAKE_CURRENT_LIST_DIR}/cmsis_core/an521_ns_init.c>
-        $<$<BOOL:${TEST_NS_FPU}>:${CMAKE_CURRENT_LIST_DIR}/test_interrupt.c>
+        $<$<BOOL:${TEST_NS_FPU}>:cmsis_core/an521_ns_init.c>
+        $<$<BOOL:${TEST_NS_FPU}>:test_interrupt.c>
 )
 
 target_include_directories(platform_ns

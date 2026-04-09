@@ -82,7 +82,6 @@ target_sources(platform_ns
     PRIVATE
         ${ALCOR_COMMON_DIR}/cmsis_drivers/Driver_USART.c
         ${CMAKE_CURRENT_SOURCE_DIR}/ext/target/arm/drivers/usart/cmsdk/uart_cmsdk_drv.c
-    INTERFACE
         $<$<BOOL:${TEST_NS_FPU}>:${ALCOR_COMMON_DIR}/device/source/alcor_ns_init.c>
         $<$<BOOL:${TEST_NS_FPU}>:${PLATFORM_DIR}/ext/common/test_interrupt.c>
 )

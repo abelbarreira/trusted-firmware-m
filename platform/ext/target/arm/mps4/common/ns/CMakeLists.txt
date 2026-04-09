@@ -58,7 +58,6 @@ target_sources(platform_ns
         device/source/platform_ns_device_definition.c
         cmsis_drivers/Driver_USART.c
         ${PLATFORM_DIR}/ext/target/arm/drivers/usart/cmsdk/uart_cmsdk_drv.c
-    INTERFACE
         $<$<BOOL:${TEST_NS_FPU}>:${PLATFORM_DIR}/device/source/mps4_corstone3xx_ns_init.c>
         $<$<BOOL:${TEST_NS_FPU}>:${PLATFORM_DIR}/ext/common/test_interrupt.c>
 )
