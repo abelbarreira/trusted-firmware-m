@@ -355,7 +355,7 @@ enum psa_attest_err_t attest_boot_data_init(void)
     TFM_COVERITY_DEVIATE_BLOCK(MISRA_C_2023_Rule_11_3, "Intentional pointer cast");
     return attest_get_boot_data(TLV_MAJOR_IAS,
                                 (struct tfm_boot_data *)&boot_data,
-                                MAX_BOOT_STATUS);
+                                sizeof(boot_data));
     TFM_COVERITY_BLOCK_END(MISRA_C_2023_Rule_11_3)
 #endif
 }
