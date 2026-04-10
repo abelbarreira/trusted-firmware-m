@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2024-2025, Arm Limited. All rights reserved.
- * Copyright (c) 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
+ * Copyright (c) 2019-2026 Cypress Semiconductor Corporation (an Infineon company)
  * or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -13,10 +13,10 @@
 #include "config_tfm.h"
 
 #include "cy_ipc_drv.h"
-#include "fih.h"
 #include "ifx_platform_mailbox.h"
 #include "ifx_regions.h"
 #ifdef TFM_FIH_PROFILE_ON
+#include "fih.h"
 #include "psa/service.h" /* Used for psa_panic */
 #endif /* TFM_FIH_PROFILE_ON */
 #include "tfm_hal_multi_core.h"
