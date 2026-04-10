@@ -78,6 +78,12 @@ static const psa_api_svc_func_t psa_api_svc_func_table[] = {
     (psa_api_svc_func_t)tfm_spm_agent_psa_call,
     (psa_api_svc_func_t)tfm_spm_agent_psa_connect,
     (psa_api_svc_func_t)tfm_spm_agent_psa_close,
+#if PSA_FRAMEWORK_HAS_MM_IOVEC == 1
+    (psa_api_svc_func_t)tfm_spm_partition_psa_map_invec,
+    (psa_api_svc_func_t)tfm_spm_partition_psa_unmap_invec,
+    (psa_api_svc_func_t)tfm_spm_partition_psa_map_outvec,
+    (psa_api_svc_func_t)tfm_spm_partition_psa_unmap_outvec,
+#endif
 };
 
 static uint32_t thread_mode_spm_return(uint32_t result)

@@ -167,6 +167,33 @@ __naked void psa_eoi_svc(psa_signal_t irq_signal)
 
 #endif /* CONFIG_TFM_FLIH_API == 1 || CONFIG_TFM_SLIH_API == 1 */
 
+#if PSA_FRAMEWORK_HAS_MM_IOVEC == 1
+
+__naked const void *psa_map_invec_svc(psa_handle_t msg_handle, uint32_t invec_idx)
+{
+    __asm volatile("svc     "M2S(TFM_SVC_PSA_MAP_INVEC)"       \n"
+                   "bx      lr                                 \n");
+}
+
+__naked void psa_unmap_invec_svc(psa_handle_t msg_handle, uint32_t invec_idx)
+{
+    __asm volatile("svc     "M2S(TFM_SVC_PSA_UNMAP_INVEC)"     \n"
+                   "bx      lr                                 \n");
+}
+
+__naked void *psa_map_outvec_svc(psa_handle_t msg_handle, uint32_t outvec_idx)
+{
+    __asm volatile("svc     "M2S(TFM_SVC_PSA_MAP_OUTVEC)"      \n"
+                   "bx      lr                                 \n");
+}
+
+__naked void psa_unmap_outvec_svc(psa_handle_t msg_handle, uint32_t outvec_idx, size_t len)
+{
+    __asm volatile("svc     "M2S(TFM_SVC_PSA_UNMAP_OUTVEC)"    \n"
+                   "bx      lr                                 \n");
+}
+#endif /* PSA_FRAMEWORK_HAS_MM_IOVEC == 1 */
+
 #ifdef TFM_PARTITION_NS_AGENT_MAILBOX
 __naked psa_status_t agent_psa_call_svc(psa_handle_t handle,
                                         uint32_t control,
@@ -226,6 +253,12 @@ const struct psa_api_tbl_t psa_api_svc = {
                                 psa_eoi_svc,
 #endif /* CONFIG_TFM_SLIH_API == 1 */
 #endif /* CONFIG_TFM_FLIH_API == 1 || CONFIG_TFM_SLIH_API == 1 */
+#if PSA_FRAMEWORK_HAS_MM_IOVEC == 1
+                                psa_map_invec_svc,
+                                psa_unmap_invec_svc,
+                                psa_map_outvec_svc,
+                                psa_unmap_outvec_svc,
+#endif /* PSA_FRAMEWORK_HAS_MM_IOVEC == 1 */
 #ifdef TFM_PARTITION_NS_AGENT_MAILBOX
                                 agent_psa_call_svc,
 #if CONFIG_TFM_CONNECTION_BASED_SERVICE_API == 1
