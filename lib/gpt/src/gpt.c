@@ -648,6 +648,7 @@ psa_status_t gpt_entry_remove(const struct efi_guid_t *guid)
      * to be modified if the last entry in the array was moved or if it is
      * the only LBA used by the partition array
      */
+    const uint64_t array_end_lba = partition_array_last_lba(&primary_gpt);
     if (cached_index != primary_gpt.num_used_partitions - 1 ||
             cached_index < gpt_entry_per_lba_count())
     {
@@ -669,7 +670,6 @@ psa_status_t gpt_entry_remove(const struct efi_guid_t *guid)
          * Use a second buffer to read each consecutive LBA and copy that to
          * the global LBA buffer to then write afterwards.
          */
-        const uint64_t array_end_lba = partition_array_last_lba(&primary_gpt);
         for (uint64_t i = partition_entry_lba(&primary_gpt, cached_index) + 1;
                 i <= array_end_lba;
                 ++i)
@@ -705,44 +705,44 @@ psa_status_t gpt_entry_remove(const struct efi_guid_t *guid)
                     sizeof(array_buf) - primary_gpt.header.entry_size);
             memcpy(lba_buf, array_buf, TFM_GPT_BLOCK_SIZE);
         }
+    }
 
-        /* What was the final LBA is now cached and may be empty or partially-filled */
-        cached_lba = array_end_lba;
-        write_buffered = false;
-        uint32_t entries_in_last_lba = (--primary_gpt.num_used_partitions) % gpt_entry_per_lba_count();
-        if (entries_in_last_lba == 0) {
-            /* There's nothing left in this LBA, so zero it all and write it out.
-             * There is also no need to do an erase just to zero afterwards.
-             */
-            memset(lba_buf, 0, TFM_GPT_BLOCK_SIZE);
-            if (backup_gpt_array_lba != 0) {
-                int write_ret = plat_flash_driver->write(
-                        backup_gpt_array_lba + array_end_lba - PRIMARY_GPT_ARRAY_LBA,
-                        lba_buf);
-                if (write_ret != TFM_GPT_BLOCK_SIZE) {
-                    return PSA_ERROR_STORAGE_FAILURE;
-                }
-            }
-            int write_ret = plat_flash_driver->write(array_end_lba, lba_buf);
+    /* What was the final LBA is now cached and may be empty or partially-filled */
+    cached_lba = array_end_lba;
+    write_buffered = false;
+    uint32_t entries_in_last_lba = (--primary_gpt.num_used_partitions) % gpt_entry_per_lba_count();
+    if (entries_in_last_lba == 0) {
+        /* There's nothing left in this LBA, so zero it all and write it out.
+         * There is also no need to do an erase just to zero afterwards.
+         */
+        memset(lba_buf, 0, TFM_GPT_BLOCK_SIZE);
+        if (backup_gpt_array_lba != 0) {
+            int write_ret = plat_flash_driver->write(
+                    backup_gpt_array_lba + array_end_lba - PRIMARY_GPT_ARRAY_LBA,
+                    lba_buf);
             if (write_ret != TFM_GPT_BLOCK_SIZE) {
                 return PSA_ERROR_STORAGE_FAILURE;
             }
-        } else {
-            /* Zero what is not needed anymore */
-            memset(
-                    lba_buf + primary_gpt.header.entry_size * entries_in_last_lba,
-                    0,
-                    (gpt_entry_per_lba_count() - entries_in_last_lba) * primary_gpt.header.entry_size);
-            if (backup_gpt_array_lba != 0) {
-                ret = write_to_flash(backup_gpt_array_lba + array_end_lba - PRIMARY_GPT_ARRAY_LBA);
-                if (ret != PSA_SUCCESS) {
-                    return ret;
-                }
-            }
-            ret = write_to_flash(array_end_lba);
+        }
+        int write_ret = plat_flash_driver->write(array_end_lba, lba_buf);
+        if (write_ret != TFM_GPT_BLOCK_SIZE) {
+            return PSA_ERROR_STORAGE_FAILURE;
+        }
+    } else {
+        /* Zero what is not needed anymore */
+        memset(
+                lba_buf + primary_gpt.header.entry_size * entries_in_last_lba,
+                0,
+                (gpt_entry_per_lba_count() - entries_in_last_lba) * primary_gpt.header.entry_size);
+        if (backup_gpt_array_lba != 0) {
+            ret = write_to_flash(backup_gpt_array_lba + array_end_lba - PRIMARY_GPT_ARRAY_LBA);
             if (ret != PSA_SUCCESS) {
                 return ret;
             }
+        }
+        ret = write_to_flash(array_end_lba);
+        if (ret != PSA_SUCCESS) {
+            return ret;
         }
     }
 
