@@ -67,6 +67,13 @@ target_compile_definitions(tfm_psa_rot_partition_attestation
         $<$<NOT:$<BOOL:${SYMMETRIC_INITIAL_ATTESTATION}>>:ATTEST_KEY_BITS=${ATTEST_KEY_BITS}>
 )
 
+if(DEFINED ATTEST_BOOT_STATUS_MAX_SIZE)
+    target_compile_definitions(tfm_psa_rot_partition_attestation
+        PRIVATE
+            ATTEST_BOOT_STATUS_MAX_SIZE=${ATTEST_BOOT_STATUS_MAX_SIZE}
+    )
+endif()
+
 ########################### Attest defs ########################################
 
 add_library(tfm_attestation_defs INTERFACE)

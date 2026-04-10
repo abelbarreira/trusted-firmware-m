@@ -20,7 +20,9 @@
 #include "coverity_check.h"
 
 #ifndef TFM_PARTITION_MEASURED_BOOT
-#define MAX_BOOT_STATUS 512
+#ifndef ATTEST_BOOT_STATUS_MAX_SIZE
+#define ATTEST_BOOT_STATUS_MAX_SIZE 512
+#endif /* ATTEST_BOOT_STATUS_MAX_SIZE */
 
 /*!
  * \struct attest_boot_data
@@ -32,7 +34,7 @@
  */
 struct attest_boot_data {
     struct shared_data_tlv_header header;
-    uint8_t data[MAX_BOOT_STATUS];
+    uint8_t data[ATTEST_BOOT_STATUS_MAX_SIZE];
 };
 
 /*!
