@@ -21,5 +21,39 @@
                 }
             }
         },
+        {
+            "label": "Start MPS2 AN521 QEMU GDB Server",
+            "type": "shell",
+            "command": "qemu-system-arm",
+            "args": [
+                "-machine", "mps2-an521",
+                "-cpu", "cortex-m33",
+                "-nographic",
+                "-monitor", "none",
+                "-serial", "stdio",
+                "-S",
+                "-gdb", "tcp::3333",
+                "-kernel", "build/api_ns/bin/bl2.axf",
+                "-device", "loader,file=build_test/tfm_s_ns_signed.bin,addr=0x10080000"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "qemu",
+                "pattern": {
+                    "regexp": "^(.*)$",
+                    "message": 1
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*$",
+                    "endsPattern": "Listening for gdb connection on device 'tcp::3333'"
+                }
+            },
+            "options": {
+                "statusbar": {
+                    "hide": false
+                }
+            }
+        },
     ]
 }
