@@ -19,6 +19,12 @@
 
 #include "flash_layout.h"
 
+#define BL1_1_HEAP_SIZE         (0x00001000)
+#define BL1_1_MSP_STACK_SIZE    (0x00001800)
+
+#define BL1_2_HEAP_SIZE         (0x00001000)
+#define BL1_2_MSP_STACK_SIZE    (0x00001800)
+
 #define BL2_HEAP_SIZE           (0x00001000)
 #define BL2_MSP_STACK_SIZE      (0x00001800)
 
@@ -94,6 +100,36 @@
 #define S_RAM_ALIAS(x)  (S_RAM_ALIAS_BASE + (x))
 #define NS_RAM_ALIAS(x) (NS_RAM_ALIAS_BASE + (x))
 
+/* Shared data area between boot stages and runtime firmware.
+ * Keep this at the start of secure SRAM so later stages can reuse the existing
+ * TF-M handoff convention.
+ */
+#define BOOT_TFM_SHARED_DATA_BASE  (S_RAM_ALIAS(0x0))
+#define BOOT_TFM_SHARED_DATA_SIZE  (0x400)
+#define BOOT_TFM_SHARED_DATA_LIMIT (BOOT_TFM_SHARED_DATA_BASE + \
+                                    BOOT_TFM_SHARED_DATA_SIZE - 1)
+#define SHARED_BOOT_MEASUREMENT_BASE  BOOT_TFM_SHARED_DATA_BASE
+#define SHARED_BOOT_MEASUREMENT_SIZE  BOOT_TFM_SHARED_DATA_SIZE
+#define SHARED_BOOT_MEASUREMENT_LIMIT BOOT_TFM_SHARED_DATA_LIMIT
+
+#ifdef BL1
+#define BL1_1_CODE_START  (S_ROM_ALIAS(FLASH_AREA_BL1_1_OFFSET))
+#define BL1_1_CODE_SIZE   (FLASH_AREA_BL1_1_SIZE)
+#define BL1_1_CODE_LIMIT  (BL1_1_CODE_START + BL1_1_CODE_SIZE - 1)
+
+#define BL1_2_CODE_START  (S_RAM_ALIAS(0x100000))
+#define BL1_2_CODE_SIZE   (FLASH_AREA_BL1_2_SIZE)
+#define BL1_2_CODE_LIMIT  (BL1_2_CODE_START + BL1_2_CODE_SIZE - 1)
+
+#define BL1_1_DATA_START  (BOOT_TFM_SHARED_DATA_BASE + BOOT_TFM_SHARED_DATA_SIZE)
+#define BL1_1_DATA_SIZE   (0x00004000)
+#define BL1_1_DATA_LIMIT  (BL1_1_DATA_START + BL1_1_DATA_SIZE - 1)
+
+#define BL1_2_DATA_START  (S_RAM_ALIAS(0x108000))
+#define BL1_2_DATA_SIZE   (0x00004000)
+#define BL1_2_DATA_LIMIT  (BL1_2_DATA_START + BL1_2_DATA_SIZE - 1)
+#endif /* BL1 */
+
 /* Secure regions */
 #define S_IMAGE_PRIMARY_AREA_OFFSET \
              (S_IMAGE_PRIMARY_PARTITION_OFFSET + BL2_HEADER_SIZE)
@@ -137,16 +173,17 @@
 
 #ifdef BL2
 /* Bootloader regions */
-#define BL2_CODE_START    (S_ROM_ALIAS(FLASH_AREA_BL2_OFFSET))
+/* BL2 is stored in flash but executed from secure SRAM when BL1 is enabled. */
+#define BL2_CODE_START    (S_RAM_ALIAS(0x1000))
 #define BL2_CODE_SIZE     (FLASH_AREA_BL2_SIZE)
 #define BL2_CODE_LIMIT    (BL2_CODE_START + BL2_CODE_SIZE - 1)
 
-#define BL2_DATA_START    (S_RAM_ALIAS(0x0))
-#define BL2_DATA_SIZE     (TOTAL_RAM_SIZE)
+#define BL2_DATA_START    (S_RAM_ALIAS(0x81000))
+#define BL2_DATA_SIZE     (TOTAL_RAM_SIZE - 0x81000)
 #define BL2_DATA_LIMIT    (BL2_DATA_START + BL2_DATA_SIZE - 1)
+
+#define BL2_IMAGE_LOAD_ADDRESS (S_ROM_ALIAS(FLASH_AREA_BL2_OFFSET))
 #endif /* BL2 */
-
-
 
 /* Shared symbol area between bootloader and runtime firmware. Global variables
  * in the shared code can be placed here.
@@ -158,18 +195,5 @@
 #define SHARED_SYMBOL_AREA_BASE S_RAM_ALIAS_BASE
 #define SHARED_SYMBOL_AREA_SIZE 0x0
 #endif /* CODE_SHARING */
-
-/* Shared data area between bootloader and runtime firmware.
- * These areas are allocated at the beginning of the RAM, it is overlapping
- * with TF-M Secure code's MSP stack
- */
-#define BOOT_TFM_SHARED_DATA_BASE (SHARED_SYMBOL_AREA_BASE + \
-                                   SHARED_SYMBOL_AREA_SIZE)
-#define BOOT_TFM_SHARED_DATA_SIZE (0x400)
-#define BOOT_TFM_SHARED_DATA_LIMIT (BOOT_TFM_SHARED_DATA_BASE + \
-                                    BOOT_TFM_SHARED_DATA_SIZE - 1)
-#define SHARED_BOOT_MEASUREMENT_BASE BOOT_TFM_SHARED_DATA_BASE
-#define SHARED_BOOT_MEASUREMENT_SIZE BOOT_TFM_SHARED_DATA_SIZE
-#define SHARED_BOOT_MEASUREMENT_LIMIT BOOT_TFM_SHARED_DATA_LIMIT
 
 #endif /* __REGION_DEFS_H__ */

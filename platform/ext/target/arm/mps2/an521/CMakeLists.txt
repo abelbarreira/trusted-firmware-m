@@ -36,6 +36,118 @@ target_add_scatter_file(tfm_s
     $<$<C_COMPILER_ID:Clang>:${CMAKE_BINARY_DIR}/generated/platform/ext/common/atfe/tfm_isolation_s.ld>
 )
 
+if(BL1 AND PLATFORM_DEFAULT_BL1)
+    target_add_scatter_file(bl1_1
+        $<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/cmsis_core/gcc/an521_bl1_1.ld>
+    )
+
+    target_add_scatter_file(bl1_2
+        $<$<C_COMPILER_ID:GNU>:${CMAKE_CURRENT_SOURCE_DIR}/cmsis_core/gcc/an521_bl1_2.ld>
+    )
+
+    target_compile_options(bl1_1_scatter
+        PUBLIC
+            ${COMPILER_CMSE_FLAG}
+    )
+
+    target_compile_options(bl1_1
+        PUBLIC
+            ${COMPILER_CMSE_FLAG}
+    )
+
+    target_compile_options(bl1_2_scatter
+        PUBLIC
+            ${COMPILER_CMSE_FLAG}
+    )
+
+    target_compile_options(bl1_2
+        PUBLIC
+            ${COMPILER_CMSE_FLAG}
+    )
+
+    target_sources(bl1_1
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/cmsis_core/startup_an521.c
+    )
+
+    target_sources(bl1_2
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/cmsis_core/startup_an521.c
+    )
+
+    target_sources(platform_bl1_1
+        PRIVATE
+            retarget/platform_retarget_dev.c
+            cmsis_core/system_core_init.c
+            cmsis_drivers/Driver_Flash.c
+            cmsis_drivers/Driver_USART.c
+            native_drivers/arm_uart_drv.c
+            ${TF_PSA_CRYPTO_PATH}/platform/platform.c
+            ${TF_PSA_CRYPTO_PATH}/platform/memory_buffer_alloc.c
+            ${TF_PSA_CRYPTO_PATH}/extras/md.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/hmac_drbg.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/md5.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/aes.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cmac.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/sha256.c
+            ${TF_PSA_CRYPTO_PATH}/utilities/constant_time.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_mac.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/cipher_wrap.c
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/src/psa_crypto_cipher.c
+    )
+
+    target_include_directories(platform_bl1_1
+        PUBLIC
+            partition
+            cmsis_core
+            retarget
+        PRIVATE
+            .
+            ${PLATFORM_DIR}/..
+            native_drivers
+            ${TF_PSA_CRYPTO_PATH}/utilities
+            ${TF_PSA_CRYPTO_PATH}/drivers/builtin/include
+    )
+
+    target_include_directories(platform_bl1_1_interface
+        INTERFACE
+            partition
+            cmsis_core
+            retarget
+    )
+
+    target_compile_options(platform_bl1_1
+        PUBLIC
+            ${COMPILER_CMSE_FLAG}
+    )
+
+    target_sources(platform_bl1_2
+        PRIVATE
+            retarget/platform_retarget_dev.c
+            cmsis_core/system_core_init.c
+            cmsis_drivers/Driver_Flash.c
+            cmsis_drivers/Driver_USART.c
+            native_drivers/arm_uart_drv.c
+    )
+
+    target_include_directories(platform_bl1_2
+        PUBLIC
+            partition
+            cmsis_core
+            retarget
+        PRIVATE
+            .
+            ${PLATFORM_DIR}/..
+            native_drivers
+    )
+
+    target_compile_options(platform_bl1_2
+        PUBLIC
+            ${COMPILER_CMSE_FLAG}
+    )
+endif()
+
 if(BL2)
     target_sources(bl2
         PRIVATE

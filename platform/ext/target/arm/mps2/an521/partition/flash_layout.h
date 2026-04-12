@@ -18,33 +18,37 @@
 #ifndef __FLASH_LAYOUT_H__
 #define __FLASH_LAYOUT_H__
 
-/* Flash layout on MPS2 AN521 with BL2 (multiple image boot):
+/* Flash layout on MPS2 AN521 with BL1 + BL2 (multiple image boot):
  *
- * 0x0000_0000 BL2 - MCUBoot (0.5 MB)
- * 0x0008_0000 Secure image     primary slot (0.5 MB)
- * 0x0010_0000 Non-secure image primary slot (0.5 MB)
- * 0x0018_0000 Secure image     secondary slot (0.5 MB)
- * 0x0020_0000 Non-secure image secondary slot (0.5 MB)
- * 0x0028_0000 Scratch area (0.5 MB)
- * 0x0030_0000 Protected Storage Area (20 KB)
- * 0x0030_5000 Internal Trusted Storage Area (16 KB)
- * 0x0030_9000 OTP / NV counters area (8 KB)
- * 0x0030_B000 Unused (980 KB)
+ * 0x0000_0000 BL1_1               (64 KB)
+ * 0x0001_0000 BL1_2 image in flash (64 KB)
+ * 0x0002_0000 BL2 - MCUBoot      (0.5 MB)
+ * 0x000A_0000 Secure image     primary slot (0.5 MB)
+ * 0x0012_0000 Non-secure image primary slot (0.5 MB)
+ * 0x001A_0000 Secure image     secondary slot (0.5 MB)
+ * 0x0022_0000 Non-secure image secondary slot (0.5 MB)
+ * 0x002A_0000 Scratch area (0.5 MB)
+ * 0x0032_0000 Protected Storage Area (20 KB)
+ * 0x0032_5000 Internal Trusted Storage Area (16 KB)
+ * 0x0032_9000 OTP / NV counters area (8 KB)
+ * 0x0032_B000 Unused (852 KB)
  *
- * Flash layout on MPS2 AN521 with BL2 (single image boot):
+ * Flash layout on MPS2 AN521 with BL1 + BL2 (single image boot):
  *
- * 0x0000_0000 BL2 - MCUBoot (0.5 MB)
- * 0x0008_0000 Primary image area (1 MB):
- *    0x0008_0000 Secure     image primary
- *    0x0010_0000 Non-secure image primary
- * 0x0018_0000 Secondary image area (1 MB):
- *    0x0018_0000 Secure     image secondary
- *    0x0020_0000 Non-secure image secondary
- * 0x0028_0000 Scratch area (1 MB)
- * 0x0038_0000 Protected Storage Area (20 KB)
- * 0x0038_5000 Internal Trusted Storage Area (16 KB)
- * 0x0038_9000 OTP / NV counters area (8 KB)
- * 0x0038_B000 Unused (468 KB)
+ * 0x0000_0000 BL1_1               (64 KB)
+ * 0x0001_0000 BL1_2 image in flash (64 KB)
+ * 0x0002_0000 BL2 - MCUBoot      (0.5 MB)
+ * 0x000A_0000 Primary image area (1 MB):
+ *    0x000A_0000 Secure     image primary
+ *    0x0012_0000 Non-secure image primary
+ * 0x001A_0000 Secondary image area (1 MB):
+ *    0x001A_0000 Secure     image secondary
+ *    0x0022_0000 Non-secure image secondary
+ * 0x002A_0000 Scratch area (1 MB)
+ * 0x003A_0000 Protected Storage Area (20 KB)
+ * 0x003A_5000 Internal Trusted Storage Area (16 KB)
+ * 0x003A_9000 OTP / NV counters area (8 KB)
+ * 0x003A_B000 Unused (340 KB)
  *
  * Flash layout on MPS2 AN521, if BL2 not defined:
  *
@@ -76,13 +80,20 @@
 /* Flash layout info for BL2 bootloader */
 /* Same as FLASH0_BASE_S */
 #define FLASH_BASE_ADDRESS              (0x10000000)
+#define FLASH_BL1_BASE_ADDRESS          FLASH_BASE_ADDRESS
+
+#define FLASH_AREA_BL1_1_OFFSET         (0x0)
+#define FLASH_AREA_BL1_1_SIZE           (0x10000) /* 64 KB */
+
+#define BL1_2_IMAGE_FLASH_OFFSET        (FLASH_AREA_BL1_1_OFFSET + FLASH_AREA_BL1_1_SIZE)
+#define FLASH_AREA_BL1_2_SIZE           (0x10000) /* 64 KB */
 
 /* Offset and size definitions of the flash partitions that are handled by the
  * bootloader. The image swapping is done between IMAGE_PRIMARY and
  * IMAGE_SECONDARY, SCRATCH is used as a temporary storage during image
  * swapping.
  */
-#define FLASH_AREA_BL2_OFFSET      (0x0)
+#define FLASH_AREA_BL2_OFFSET      (BL1_2_IMAGE_FLASH_OFFSET + FLASH_AREA_BL1_2_SIZE)
 #define FLASH_AREA_BL2_SIZE        (0x80000) /* 512 KB */
 
 #if !defined(MCUBOOT_IMAGE_NUMBER) || (MCUBOOT_IMAGE_NUMBER == 1)
@@ -168,6 +179,7 @@
  * Name is defined in flash driver file: Driver_Flash.c
  */
 #define FLASH_DEV_NAME Driver_FLASH0
+#define FLASH_DEV_NAME_BL1 Driver_FLASH0
 /* Smallest flash programmable unit in bytes */
 #define TFM_HAL_FLASH_PROGRAM_UNIT       (0x1)
 

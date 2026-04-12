@@ -7,6 +7,18 @@
 
 include(hex_generator)
 
+set(BL1                                 ON               CACHE BOOL      "Whether to build BL1")
+set(PLATFORM_DEFAULT_BL1                ON               CACHE STRING    "Whether to use default BL1 or platform-specific one")
+set(TFM_BL1_SOFTWARE_CRYPTO             ON               CACHE BOOL      "Whether BL1_1 will use software crypto")
+set(TFM_BL1_MEMORY_MAPPED_FLASH         ON               CACHE BOOL      "Whether BL1 can directly access flash content")
+set(TFM_BL1_2_IN_FLASH                  TRUE             CACHE BOOL      "Whether BL1_2 is stored in FLASH")
+set(TFM_BL1_2_IN_OTP                    FALSE            CACHE BOOL      "Whether BL1_2 is stored in OTP")
+set(TFM_BL1_2_IMAGE_ENCRYPTION          OFF              CACHE BOOL      "Whether BL1_2 will encrypt BL2 images")
+set(TFM_BL1_2_ENABLE_ECDSA              ON               CACHE BOOL      "Enable ECDSA crypto for BL2 verification")
+set(TFM_BL1_2_ENABLE_LMS                OFF              CACHE BOOL      "Enable LMS crypto for BL2 verification")
+set(TFM_BL1_DEFAULT_PROVISIONING        ON               CACHE BOOL      "Whether BL1_1 will use default provisioning")
+set(BL1_1_SHARED_SYMBOLS_PATH           ${CMAKE_SOURCE_DIR}/bl1/bl1_1/bl1_1_shared_symbols.txt CACHE FILEPATH "Path to list of BL1_1 shared symbols")
+
 if(BL2)
     set(BL2_TRAILER_SIZE 0x10000 CACHE STRING "Trailer size")
 else()
