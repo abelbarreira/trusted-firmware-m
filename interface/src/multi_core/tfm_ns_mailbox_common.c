@@ -18,7 +18,7 @@ int32_t tfm_ns_mailbox_init(struct ns_mailbox_queue_t *queue)
 {
     int32_t ret;
 
-    if (queue != NULL) {
+    if (queue == NULL) {
         return MAILBOX_INVAL_PARAMS;
     }
 
