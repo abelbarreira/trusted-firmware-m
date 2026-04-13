@@ -1,4 +1,4 @@
-From d8cd51fcc9d2145a45adf22a7ff63511d7e0537c Mon Sep 17 00:00:00 2001
+From 67d948ea2f9504c5af2979e83b531daaec51e607 Mon Sep 17 00:00:00 2001
 From: David Vincze <david.vincze@arm.com>
 Date: Wed, 8 Apr 2026 15:27:17 +0000
 Subject: [PATCH] bootutil: Parse key ID for built-in keys
@@ -18,7 +18,7 @@ Change-Id: If194aaf281d34c3a2260881b9831d64c3cf386d3
 ---
  boot/bootutil/include/bootutil/crypto/ecdsa.h |  5 --
  boot/bootutil/include/bootutil/image.h        | 13 ++--
- boot/bootutil/include/bootutil/sign_key.h     | 15 +++-
+ boot/bootutil/include/bootutil/sign_key.h     | 18 ++++-
  boot/bootutil/src/bootutil_find_key.c         | 69 ++++++++++++-------
  boot/bootutil/src/bootutil_priv.h             |  4 +-
  boot/bootutil/src/image_ecdsa.c               |  6 +-
@@ -27,7 +27,7 @@ Change-Id: If194aaf281d34c3a2260881b9831d64c3cf386d3
  boot/bootutil/src/image_validate.c            | 35 +++++-----
  scripts/imgtool/image.py                      | 22 ++++--
  scripts/imgtool/main.py                       | 10 ++-
- 11 files changed, 118 insertions(+), 69 deletions(-)
+ 11 files changed, 121 insertions(+), 69 deletions(-)
 
 diff --git a/boot/bootutil/include/bootutil/crypto/ecdsa.h b/boot/bootutil/include/bootutil/crypto/ecdsa.h
 index 35f0930fa..eb2fe9c66 100644
@@ -85,10 +85,19 @@ index 3d103f8da..fab8fcba9 100644
  int
  bootutil_img_hash(struct boot_loader_state *state,
 diff --git a/boot/bootutil/include/bootutil/sign_key.h b/boot/bootutil/include/bootutil/sign_key.h
-index a5e81d350..5de82eb2f 100644
+index a5e81d350..f7a377843 100644
 --- a/boot/bootutil/include/bootutil/sign_key.h
 +++ b/boot/bootutil/include/bootutil/sign_key.h
-@@ -39,7 +39,20 @@ struct bootutil_key {
+@@ -28,6 +28,8 @@
+ /* mcuboot_config.h is needed for MCUBOOT_HW_KEY to work */
+ #include "mcuboot_config/mcuboot_config.h"
+ 
++#include "bootutil/fault_injection_hardening.h"
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+@@ -39,7 +41,21 @@ struct bootutil_key {
  };
  
  extern const struct bootutil_key bootutil_keys[];
@@ -101,9 +110,10 @@ index a5e81d350..5de82eb2f 100644
 + * @param[in]  image_index   Index of the image to be verified.
 + * @param[in]  key_id        Identifier of the key to be verified against the image.
 + *
-+ * @return                   0 if the key ID is valid for the image; nonzero on failure.
++ * @return                   FIH_SUCCESS if the key ID is valid for the image;
++ *                           FIH_FAILURE on failure.
 + */
-+int boot_verify_key_id_for_image(uint8_t image_index, uint32_t key_id);
++fih_ret boot_verify_key_id_for_image(uint8_t image_index, uint32_t key_id);
 +#endif /* MCUBOOT_BUILTIN_KEY */
 +
 +#else /* !MCUBOOT_HW_KEY */
