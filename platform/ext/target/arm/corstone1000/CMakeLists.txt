@@ -92,9 +92,12 @@ target_add_scatter_file(bl1_2
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/rse_comms rse_comms)
 
+# Fetch PSA Crypto drivers from external repository
+add_subdirectory(${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx cc3xx-src)
+
 # Set which PLATFORM depedency must be used by the CC3XX driver
 set(CC3XX_PLATFORM_INTERFACE platform_bl1_1_interface)
-add_subdirectory(${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx cc3xx)
+add_subdirectory(${CC3XX_DRIVER_PATH} cc3xx)
 
 target_include_directories(platform_s
     PUBLIC
@@ -299,8 +302,8 @@ target_compile_definitions(platform_bl1_2
 
 target_include_directories(platform_bl1_2
     PRIVATE
-        $<$<BOOL:${CRYPTO_HW_ACCELERATOR}>:${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx/low_level_driver/include>
-        $<$<BOOL:${CRYPTO_HW_ACCELERATOR}>:${PLATFORM_DIR}/ext/target/arm/drivers/cc3xx/common>
+        $<$<BOOL:${CRYPTO_HW_ACCELERATOR}>:${CC3XX_DRIVER_PATH}/low_level_driver/include>
+        $<$<BOOL:${CRYPTO_HW_ACCELERATOR}>:${CC3XX_DRIVER_PATH}/cc3xx/common>
     INTERFACE
         .
         ./Device/Include
@@ -323,6 +326,11 @@ target_link_libraries(platform_bl1_2
     PRIVATE
         tfm_efi_soft_crc
         tfm_efi_guid
+)
+
+target_link_libraries(platform_bl1_2
+    PRIVATE
+        cc3xx
 )
 
 #========================= Platform BL2 =======================================#
