@@ -5,7 +5,7 @@
 #
 #-------------------------------------------------------------------------------
 
-add_library(tfm_efi_soft_crc STATIC)
+add_library(tfm_efi_soft_crc STATIC EXCLUDE_FROM_ALL)
 
 target_sources(tfm_efi_soft_crc
     PRIVATE

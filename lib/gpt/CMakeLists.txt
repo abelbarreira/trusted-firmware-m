@@ -7,7 +7,7 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-add_library(tfm_gpt STATIC)
+add_library(tfm_gpt STATIC EXCLUDE_FROM_ALL)
 
 set(GPT_LOG_LEVEL LOG_LEVEL_INFO CACHE STRING "Set default log level for the GPT library")
 

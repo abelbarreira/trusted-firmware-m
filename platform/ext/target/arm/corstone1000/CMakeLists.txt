@@ -259,6 +259,11 @@ target_link_libraries(platform_bl1_1
         tfm_efi_guid
 )
 
+target_link_libraries(tfm_efi_guid
+    PUBLIC
+        bl1_1_psa_crypto_interface
+)
+
 target_include_directories(platform_bl1_1
     PRIVATE
     ${CMAKE_SOURCE_DIR}/interface/include # for psa/error.h

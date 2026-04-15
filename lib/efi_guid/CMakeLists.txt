@@ -5,7 +5,7 @@
 #
 #-------------------------------------------------------------------------------
 
-add_library(tfm_efi_guid STATIC)
+add_library(tfm_efi_guid STATIC EXCLUDE_FROM_ALL)
 
 target_sources(tfm_efi_guid
     PRIVATE
@@ -20,5 +20,4 @@ target_include_directories(tfm_efi_guid
 target_link_libraries(tfm_efi_guid
     PUBLIC
         psa_interface
-        psa_crypto_config
 )
