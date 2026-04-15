@@ -57,6 +57,9 @@ def get_compiler_system_includes(compiler):
     """
     assert os.path.isfile(compiler)
 
+    if os.path.basename(compiler) == "iccarm":
+        return []
+
     probe_cmd = [compiler]
 
     # Armclang requires that the target type be specified
@@ -668,11 +671,12 @@ def _c_from_h_file(h_file, name, compiler, includes, defines, f, kind):
 
     # Use the include directory from the cross-compiler instead
     # of the host clang
-    args += ["-nostdinc", "-nostdinc++"]
-    system_includes = get_compiler_system_includes(compiler)
-    for inc in system_includes:
-        assert os.path.isdir(inc)
-        args += ["-isystem", inc]
+    if os.path.basename(compiler) != "iccarm":
+        args += ["-nostdinc", "-nostdinc++"]
+        system_includes = get_compiler_system_includes(compiler)
+        for inc in system_includes:
+            assert os.path.isdir(inc)
+            args += ["-isystem", inc]
 
     args += ["-D{}".format(d) for d in defines]
 
