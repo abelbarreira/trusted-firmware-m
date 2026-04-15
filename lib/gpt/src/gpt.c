@@ -20,10 +20,14 @@
 #include "efi_soft_crc.h"
 
 /* This needs to be defined by the platform and is used by the GPT library as
- * the number of bytes in a Logical Block Address (LBA)
+ * the number of bytes in a Logical Block Address (LBA). It also must be at least
+ * 512.
  */
 #ifndef TFM_GPT_BLOCK_SIZE
 #error "TFM_GPT_BLOCK_SIZE must be defined if using GPT library!"
+#endif
+#if TFM_GPT_BLOCK_SIZE < 512
+#error "TFM_GPT_BLOCK_SIZE must be at least 512!"
 #endif
 
 /* Where Master Boot Record (MBR) is on flash */
