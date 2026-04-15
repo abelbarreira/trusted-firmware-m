@@ -493,6 +493,185 @@ void test_gpt_validate_should_failWhenArrayCrcBad(void)
     TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
 }
 
+void test_gpt_validate_should_failWhenBackupLbaNotAtEndOfDisk(void)
+{
+    /* First test when the backup lba is before usable disk */
+    test_header.backup_lba = test_header.first_lba - 1;
+    setup_test_gpt();
+
+    /* Each entry will be read in order to check the partition array CRC */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    /* Then test when the backup is before in usable disk space */
+    test_header.backup_lba = test_header.first_lba;
+    setup_test_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    test_header.backup_lba = test_header.first_lba + 1;
+    setup_test_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    test_header.backup_lba = test_header.last_lba - 1;
+    setup_test_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    test_header.backup_lba = test_header.last_lba;
+    setup_test_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    /* Finally, test when the backup is before the end of the partition entry array */
+    test_header.backup_lba = test_header.array_lba - 1;
+    setup_test_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    /* For this scenario, manually setup the backup header so that the array LBA
+     * (also the backup header LBA) is valid on init and can then be validated
+     * with gpt_validate
+     */
+    test_header.backup_lba = test_header.array_lba;
+
+    /* Expect first a valid MBR read */
+    register_mocked_read(&test_mbr, sizeof(test_mbr));
+
+    /* Expect a GPT header read second */
+    register_mocked_read(&test_header, sizeof(test_header));
+
+    /* Expect third each partition is read to find the number in use. This is
+     * also the backup header, which will be cached
+     */
+    setup_backup_gpt();
+
+    TEST_ASSERT_EQUAL(PSA_SUCCESS, gpt_init(&mock_driver, TEST_MAX_PARTITIONS));
+
+    /* Backup partition array read for crc */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    /* Now do the backup gpt header */
+    struct gpt_header_t backup_header;
+    test_header.backup_lba = test_header.first_lba - 1;
+    MAKE_BACKUP_HEADER(backup_header, test_header);
+
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+
+    test_header.backup_lba = backup_header.first_lba;
+    backup_header.current_lba = backup_header.first_lba;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+
+    test_header.backup_lba = backup_header.first_lba + 1;
+    backup_header.current_lba = backup_header.first_lba + 1;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+
+    test_header.backup_lba = backup_header.last_lba - 1;
+    backup_header.current_lba = backup_header.last_lba - 1;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+
+    test_header.backup_lba = backup_header.last_lba;
+    backup_header.current_lba = backup_header.last_lba;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+
+    test_header.backup_lba = backup_header.array_lba - 1;
+    backup_header.current_lba = backup_header.array_lba - 1;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+
+    test_header.backup_lba = backup_header.array_lba;
+    backup_header.current_lba = backup_header.array_lba;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+}
+
+void test_gpt_validate_should_failWhenPartitionArrayInUsableDiskSpace(void)
+{
+    /* First test when the primary partition array is in usable disk space */
+    test_header.array_lba = test_header.first_lba;
+    setup_test_gpt();
+
+    /* Each entry will be read in order to check the partition array CRC */
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    test_header.array_lba = test_header.first_lba + 1;
+    setup_test_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    test_header.array_lba = test_header.last_lba - 1;
+    setup_test_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    test_header.array_lba = test_header.last_lba;
+    setup_test_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    /* Then test when the primary partition array is after usable disk space */
+    test_header.array_lba = test_header.last_lba + 1;
+    setup_test_gpt();
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(true));
+
+    /* Now do the backup gpt header, ensuring it is always after usable space */
+    struct gpt_header_t backup_header;
+    MAKE_BACKUP_HEADER(backup_header, test_header);
+
+    backup_header.array_lba = test_header.first_lba - 1;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+
+    /* Then test that the backup partition array is after usable disk space */
+    backup_header.array_lba = test_header.first_lba;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+
+    backup_header.array_lba = test_header.first_lba + 1;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+
+    backup_header.array_lba = test_header.last_lba - 1;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+
+    backup_header.array_lba = test_header.last_lba;
+    setup_test_gpt();
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+    TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+}
+
 void test_gpt_restore_should_restorePrimaryFromBackup(void)
 {
     /* Start with a valid GPT */

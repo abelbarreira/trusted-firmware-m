@@ -229,6 +229,12 @@ static psa_status_t mbr_load(struct mbr_t *mbr);
 static bool gpt_entry_cmp_guid(const struct gpt_entry_t *entry, const void *guid);
 static bool gpt_entry_cmp_name(const struct gpt_entry_t *entry, const void *name);
 static bool gpt_entry_cmp_type(const struct gpt_entry_t *entry, const void *type);
+static psa_status_t validate_backup_gpt_lba(const uint64_t backup_lba,
+                                            const uint64_t primary_lba,
+                                            const uint64_t partition_array_end,
+                                            const struct gpt_header_t *header);
+static psa_status_t validate_array_lba(const uint64_t partition_array_end,
+                                       const uint64_t usable_lba_start);
 static psa_status_t validate_table(struct gpt_t *table, bool is_primary);
 static psa_status_t restore_table(struct gpt_t *restore_from, bool is_primary);
 static psa_status_t sort_partition_array(const struct gpt_t *table);
@@ -1498,6 +1504,73 @@ static inline void swap_headers(const struct gpt_header_t *src, struct gpt_heade
             primary_gpt.header.array_lba);
 }
 
+/* Validate that the backup GPT LBA is greater than all other LBAs in the header
+ */
+static psa_status_t validate_backup_gpt_lba(const uint64_t backup_lba,
+                                            const uint64_t primary_lba,
+                                            const uint64_t partition_array_end,
+                                            const struct gpt_header_t *header)
+{
+    if (backup_lba <= primary_lba) {
+        ERROR("Backup LBA (0x%08x%08x) must be final LBA on flash, "
+              "primary LBA at 0x%08x%08x\n",
+              (uint32_t)(backup_lba >> 32),
+              (uint32_t)(backup_lba),
+              (uint32_t)(primary_lba >> 32),
+              (uint32_t)(primary_lba));
+        return PSA_ERROR_INVALID_SIGNATURE;
+    }
+
+    if (backup_lba <= header->first_lba) {
+        ERROR("Backup LBA (0x%08x%08x) must be final LBA on flash, "
+              "first usable LBA at 0x%08x%08x\n",
+              (uint32_t)(backup_lba >> 32),
+              (uint32_t)(backup_lba),
+              (uint32_t)(header->first_lba >> 32),
+              (uint32_t)(header->first_lba));
+        return PSA_ERROR_INVALID_SIGNATURE;
+    }
+
+    if (backup_lba <= header->last_lba) {
+        ERROR("Backup LBA (0x%08x%08x) must be final LBA on flash, "
+              "last usable LBA at 0x%08x%08x\n",
+              (uint32_t)(backup_lba >> 32),
+              (uint32_t)(backup_lba),
+              (uint32_t)(header->last_lba >> 32),
+              (uint32_t)(header->last_lba));
+        return PSA_ERROR_INVALID_SIGNATURE;
+    }
+
+    if (backup_lba <= partition_array_end) {
+        ERROR("Backup LBA (0x%08x%08x) must be final LBA on flash, "
+              "partition array ends at LBA at 0x%08x%08x\n",
+              (uint32_t)(backup_lba >> 32),
+              (uint32_t)(backup_lba),
+              (uint32_t)(partition_array_end >> 32),
+              (uint32_t)(partition_array_end));
+        return PSA_ERROR_INVALID_SIGNATURE;
+    }
+
+    return PSA_SUCCESS;
+}
+
+/* Validate partition array is outside the area of usable flash */
+static psa_status_t validate_array_lba(const uint64_t partition_array_end,
+                                       const uint64_t usable_lba_start)
+{
+    if (partition_array_end >= usable_lba_start) {
+        ERROR("GPT partition array must not be in usable space: "
+              "0x%08x%08x >= 0x%08x%08x\n",
+              (uint32_t)(partition_array_end >> 32),
+              (uint32_t)partition_array_end,
+              (uint32_t)(usable_lba_start >> 32),
+              (uint32_t)usable_lba_start);
+        return PSA_ERROR_INVALID_SIGNATURE;
+    }
+
+    return PSA_SUCCESS;
+}
+
 /* Validates a specific GPT. */
 static psa_status_t validate_table(struct gpt_t *table, bool is_primary)
 {
@@ -1562,6 +1635,48 @@ static psa_status_t validate_table(struct gpt_t *table, bool is_primary)
         ERROR("CRC of partition array does not match, expected 0x%x got 0x%x\n",
                 calc_crc, header->array_crc);
         return PSA_ERROR_INVALID_SIGNATURE;
+    }
+
+    /* Check the backup LBA is greater than all other LBAs. Check also
+     * the partition array cannot be overritten by data by ensuring
+     * that it is not between the first and last usable LBAs
+     */
+    if (is_primary) {
+        psa_status_t ret = validate_backup_gpt_lba(
+                header->backup_lba,
+                header->current_lba,
+                partition_entry_lba(table, header->num_partitions - 1),
+                header);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+
+        /* Go to the final LBA of the partition array, including unused entries */
+        ret = validate_array_lba(
+                partition_entry_lba(table, header->num_partitions - 1),
+                header->first_lba);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+    } else {
+        psa_status_t ret = validate_backup_gpt_lba(
+                header->current_lba,
+                header->backup_lba,
+                partition_entry_lba(table, header->num_partitions - 1),
+                header);
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
+
+        /* To flip the condition, negate the parameters passed: it becomes
+         * -array_lba >= -last_lba (equivalent to) array_lba < last_lba
+         * (equivalent to) last_lba >= array_lba. This is because the backup array is
+         * after the last_lba
+         */
+        ret = validate_array_lba(~(header->array_lba), ~(header->last_lba));
+        if (ret != PSA_SUCCESS) {
+            return ret;
+        }
     }
 
     if (is_primary) {
