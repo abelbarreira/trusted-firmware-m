@@ -459,7 +459,7 @@ psa_status_t gpt_entry_move(const struct efi_guid_t *guid,
 
     /* Cached LBA */
     for (uint32_t i = 0; i < num_entries_in_cached_lba; ++i) {
-        memcpy(&entry, lba_buf + (i * primary_gpt.header.entry_size), GPT_ENTRY_SIZE);
+        memcpy(&entry, lba_buf + (i * GPT_ENTRY_SIZE), GPT_ENTRY_SIZE);
 
         const struct efi_guid_t ent_guid = entry.unique_guid;
         if (efi_guid_cmp(&ent_guid, guid) == 0) {
@@ -658,9 +658,9 @@ psa_status_t gpt_entry_remove(const struct efi_guid_t *guid)
         const uint32_t lba_index = cached_index % gpt_entry_per_lba_count();
         if (lba_index + 1 != gpt_entry_per_lba_count()) {
             memmove(
-                    lba_buf + lba_index * primary_gpt.header.entry_size,
-                    lba_buf + (lba_index + 1) * primary_gpt.header.entry_size,
-                    (gpt_entry_per_lba_count() - lba_index - 1) * primary_gpt.header.entry_size);
+                    lba_buf + lba_index * GPT_ENTRY_SIZE,
+                    lba_buf + (lba_index + 1) * GPT_ENTRY_SIZE,
+                    (gpt_entry_per_lba_count() - lba_index - 1) * GPT_ENTRY_SIZE);
         }
 
         /* If this is not the last LBA, then read the next LBA into memory and
@@ -683,7 +683,7 @@ psa_status_t gpt_entry_remove(const struct efi_guid_t *guid)
             }
 
             memcpy(
-                    lba_buf + primary_gpt.header.entry_size * (gpt_entry_per_lba_count() - 1),
+                    lba_buf + GPT_ENTRY_SIZE * (gpt_entry_per_lba_count() - 1),
                     array_buf,
                     GPT_ENTRY_SIZE);
 
@@ -701,8 +701,8 @@ psa_status_t gpt_entry_remove(const struct efi_guid_t *guid)
 
             memmove(
                     array_buf,
-                    array_buf + primary_gpt.header.entry_size,
-                    sizeof(array_buf) - primary_gpt.header.entry_size);
+                    array_buf + GPT_ENTRY_SIZE,
+                    sizeof(array_buf) - GPT_ENTRY_SIZE);
             memcpy(lba_buf, array_buf, TFM_GPT_BLOCK_SIZE);
         }
     }
@@ -731,9 +731,9 @@ psa_status_t gpt_entry_remove(const struct efi_guid_t *guid)
     } else {
         /* Zero what is not needed anymore */
         memset(
-                lba_buf + primary_gpt.header.entry_size * entries_in_last_lba,
+                lba_buf + GPT_ENTRY_SIZE * entries_in_last_lba,
                 0,
-                (gpt_entry_per_lba_count() - entries_in_last_lba) * primary_gpt.header.entry_size);
+                (gpt_entry_per_lba_count() - entries_in_last_lba) * GPT_ENTRY_SIZE);
         if (backup_gpt_array_lba != 0) {
             ret = write_to_flash(backup_gpt_array_lba + array_end_lba - PRIMARY_GPT_ARRAY_LBA);
             if (ret != PSA_SUCCESS) {
@@ -934,6 +934,14 @@ psa_status_t gpt_init(struct gpt_flash_driver_t *flash_driver, uint64_t max_part
         goto fail_load;
     }
 
+    /* Ensure entry size is supported. */
+    if (primary_gpt.header.entry_size != GPT_ENTRY_SIZE) {
+        ERROR("Unsupported entry size 0x%08x, must be 0x%08x\n",
+                primary_gpt.header.entry_size, GPT_ENTRY_SIZE);
+        ret = PSA_ERROR_NOT_SUPPORTED;
+        goto fail_load;
+    }
+
     /* Count the number of used entries, assuming the array is not sparese */
     ret = count_used_partitions(&primary_gpt, &primary_gpt.num_used_partitions);
     if (ret != PSA_SUCCESS) {
@@ -946,6 +954,12 @@ psa_status_t gpt_init(struct gpt_flash_driver_t *flash_driver, uint64_t max_part
         struct gpt_t backup_gpt;
         ret = read_table_from_flash(&backup_gpt, false);
         if (ret != PSA_SUCCESS) {
+            goto fail_load;
+        }
+        if (backup_gpt.header.entry_size != GPT_ENTRY_SIZE) {
+            ERROR("Unsupported entry size 0x%08x, must be 0x%08x\n",
+                    backup_gpt.header.entry_size, GPT_ENTRY_SIZE);
+            ret = PSA_ERROR_NOT_SUPPORTED;
             goto fail_load;
         }
         backup_gpt_array_lba = backup_gpt.header.array_lba;
@@ -999,11 +1013,7 @@ psa_status_t gpt_uninit(void)
 /* Returns the number of partition entries in each LBA */
 static inline uint64_t gpt_entry_per_lba_count(void)
 {
-    static uint64_t num_entries = 0;
-    if (num_entries == 0) {
-        num_entries = TFM_GPT_BLOCK_SIZE / primary_gpt.header.entry_size;
-    }
-    return num_entries;
+    return TFM_GPT_BLOCK_SIZE / GPT_ENTRY_SIZE;
 }
 
 /* Copies information from the entry to the user visible structure */
@@ -1129,15 +1139,15 @@ static psa_status_t update_header(uint32_t num_partitions)
     /* Take the CRC of the partition array */
     uint32_t crc = 0;
     for (uint32_t i = 0; i < header->num_partitions; ++i) {
-        uint8_t entry_buf[header->entry_size];
-        memset(entry_buf, 0, header->entry_size);
+        uint8_t entry_buf[GPT_ENTRY_SIZE];
+        memset(entry_buf, 0, GPT_ENTRY_SIZE);
         struct gpt_entry_t *entry = (struct gpt_entry_t *)entry_buf;
 
         psa_status_t ret = read_entry_from_flash(&primary_gpt, i, entry);
         if (ret != PSA_SUCCESS) {
             return ret;
         }
-        crc = efi_soft_crc32_update(crc, entry_buf, header->entry_size);
+        crc = efi_soft_crc32_update(crc, entry_buf, GPT_ENTRY_SIZE);
     }
     header->array_crc = crc;
 
@@ -1268,7 +1278,7 @@ static psa_status_t read_entry_from_flash(const struct gpt_t *table,
 
     memcpy(
             entry,
-            lba_buf + ((array_index % gpt_entry_per_lba_count()) * table->header.entry_size),
+            lba_buf + ((array_index % gpt_entry_per_lba_count()) * GPT_ENTRY_SIZE),
             GPT_ENTRY_SIZE);
 
     return PSA_SUCCESS;
@@ -1415,7 +1425,7 @@ static psa_status_t write_entry(uint32_t                  array_index,
 
     /* Copy into buffer */
     uint32_t index_in_lba = array_index % gpt_entry_per_lba_count();
-    memcpy(lba_buf + index_in_lba * primary_gpt.header.entry_size, entry, GPT_ENTRY_SIZE);
+    memcpy(lba_buf + index_in_lba * GPT_ENTRY_SIZE, entry, GPT_ENTRY_SIZE);
 
     /* Write on every nth operation. */
     if (++num_writes == gpt_entry_per_lba_count()) {
@@ -1519,18 +1529,29 @@ static psa_status_t validate_table(struct gpt_t *table, bool is_primary)
         return PSA_ERROR_INVALID_SIGNATURE;
     }
 
+    /* Check the entry size. This is not a part of the spec but ensures the
+     * library only supports entry sizes equal to 128. Otherwise, the backup
+     * could be used to restore the primary with an entry size that is different
+     * and break that assumption, or vise-versa
+     */
+    if (header->entry_size != GPT_ENTRY_SIZE) {
+        ERROR("Unsupported entry size 0x%08x, must be 0x%08x\n",
+                header->entry_size, GPT_ENTRY_SIZE);
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+
     /* Check the CRC of the partition array */
     calc_crc = 0;
     for (uint32_t i = 0; i < header->num_partitions; ++i) {
-        uint8_t entry_buf[header->entry_size];
-        memset(entry_buf, 0, header->entry_size);
+        uint8_t entry_buf[GPT_ENTRY_SIZE];
+        memset(entry_buf, 0, GPT_ENTRY_SIZE);
         struct gpt_entry_t *entry = (struct gpt_entry_t *)entry_buf;
 
         psa_status_t ret = read_entry_from_flash(table, i, entry);
         if (ret != PSA_SUCCESS) {
             return ret;
         }
-        calc_crc = efi_soft_crc32_update(calc_crc, (uint8_t *)entry, header->entry_size);
+        calc_crc = efi_soft_crc32_update(calc_crc, (uint8_t *)entry, GPT_ENTRY_SIZE);
     }
 
     if (calc_crc != header->array_crc) {

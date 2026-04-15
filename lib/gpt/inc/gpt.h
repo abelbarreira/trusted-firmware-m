@@ -214,6 +214,7 @@ psa_status_t gpt_entry_remove(const struct efi_guid_t *guid);
  *
  * \retval PSA_SUCCESS GPT is valid.
  * \retval PSA_ERROR_STORAGE_FAILURE I/O error.
+ * \retval PSA_ERROR_NOT_SUPPORTED Entry size is not 128 bytes
  * \retval PSA_ERROR_INVALID_SIGNATURE GPT is invalid.
  */
 psa_status_t gpt_validate(bool is_primary);
@@ -249,6 +250,7 @@ psa_status_t gpt_defragment(void);
  *                                    functions defined by \p flash_driver is NULL. The init
  *                                    and uninit functions may be NULL if not required.
  * \retval PSA_ERROR_NOT_SUPPORTED Legacy MBR is used and not GPT.
+ * \retval PSA_ERROR_NOT_SUPPORTED Entry size is not 128 bytes
  */
 __attribute__((nonnull(1)))
 psa_status_t gpt_init(struct gpt_flash_driver_t *flash_driver,

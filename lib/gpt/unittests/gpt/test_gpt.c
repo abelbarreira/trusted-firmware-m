@@ -351,6 +351,30 @@ void test_gpt_init_should_failWhenMbrTypeInvalid(void)
     TEST_ASSERT_EQUAL(PSA_ERROR_NOT_SUPPORTED, setup_test_gpt());
 }
 
+void test_gpt_init_should_failWhenEntrySizeBad(void)
+{
+    test_header.entry_size--;
+    /* Expect first a valid MBR read */
+    register_mocked_read(&test_mbr, sizeof(test_mbr));
+
+    /* Expect a GPT header read second */
+    register_mocked_read(&test_header, sizeof(test_header));
+
+    TEST_ASSERT_EQUAL(PSA_ERROR_NOT_SUPPORTED, gpt_init(&mock_driver, TEST_MAX_PARTITIONS));
+    test_header.entry_size = default_header.entry_size;
+
+    /* Now do the backup. */
+    register_mocked_read(&test_mbr, sizeof(test_mbr));
+    register_mocked_read(&test_header, sizeof(test_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    /* Expect fourth the backup to be read. Make the entry size bad */
+    test_header.entry_size = 0;
+    setup_backup_gpt();
+
+    TEST_ASSERT_EQUAL(PSA_ERROR_NOT_SUPPORTED, gpt_init(&mock_driver, TEST_MAX_PARTITIONS));
+}
+
 void test_gpt_init_should_failWhenFlashDriverNotFullyDefined(void)
 {
     gpt_flash_read_t read_fn = mock_driver.read;
@@ -431,6 +455,22 @@ void test_gpt_validate_should_failWhenLbaPointerBad(void)
     register_mocked_read(&backup_header, sizeof(backup_header));
 
     TEST_ASSERT_EQUAL(PSA_ERROR_INVALID_SIGNATURE, gpt_validate(false));
+}
+
+void test_gpt_validate_should_failWhenBackupEntrySizeInvalid(void)
+{
+    /* The entry size for the primary GPT is validated on gpt_init and kept
+     * in memory. Therefore, the entry size can only be validated on gpt_validate
+     * for the backup table, which is read
+     */
+    setup_test_gpt();
+    struct gpt_header_t backup_header;
+    MAKE_BACKUP_HEADER(backup_header, test_header);
+    backup_header.entry_size--;
+    register_mocked_read(&backup_header, sizeof(backup_header));
+    register_mocked_read(&test_partition_array, sizeof(test_partition_array));
+
+    TEST_ASSERT_EQUAL(PSA_ERROR_NOT_SUPPORTED, gpt_validate(false));
 }
 
 void test_gpt_validate_should_failWhenArrayCrcBad(void)
