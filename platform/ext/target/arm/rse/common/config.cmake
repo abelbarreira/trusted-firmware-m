@@ -126,7 +126,7 @@ set(RSE_HAS_SE_DEV_SOFT_LCS             OFF        CACHE BOOL "Whether RSE has s
 set(RSE_SKU_ENABLED                     OFF        CACHE BOOL "Enable stock keeping unit based feature control")
 ######################### BL2 ##################################################
 
-set(MCUBOOT_VERSION                   "tfm-2.3.0"      CACHE STRING    "The version of MCUboot to use")
+set(MCUBOOT_VERSION                   "e2a6d0b"        CACHE STRING    "The version of MCUboot to use")
 set(MCUBOOT_PATCH_DIR                 ""               CACHE PATH      "Path to local folder which contains patches for MCUboot")
 set(MCUBOOT_IMAGE_NUMBER              4                CACHE STRING    "Number of images supported by MCUBoot")
 set(MCUBOOT_SIGNATURE_TYPE            "EC-P256"        CACHE STRING    "Algorithm to use for signature validation [RSA-2048, RSA-3072, EC-P256, EC-P384]")
