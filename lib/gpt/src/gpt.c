@@ -830,7 +830,7 @@ psa_status_t gpt_defragment(void)
      */
     psa_status_t ret = sort_partition_array(&primary_gpt);
     if (ret != PSA_SUCCESS) {
-        WARN("Unable to defragment flash!\n");
+        ERROR("Unable to defragment flash!\n");
         return ret;
     }
 
@@ -926,7 +926,7 @@ psa_status_t gpt_init(struct gpt_flash_driver_t *flash_driver, uint64_t max_part
     if (mbr.partitions[0].os_type == MBR_TYPE_GPT) {
         ret = read_table_from_flash(&primary_gpt, true);
     } else {
-        WARN("Unsupported legacy MBR in use\n");
+        ERROR("Unsupported legacy MBR in use\n");
         ret = PSA_ERROR_NOT_SUPPORTED;
     }
 
