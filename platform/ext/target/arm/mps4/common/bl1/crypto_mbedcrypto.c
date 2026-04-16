@@ -95,7 +95,7 @@ fih_ret bl1_derive_key(enum tfm_bl1_key_id_t input_key, const uint8_t *label,
     }
 
     /* Output the required number of bytes from the derivation operation */
-    status = psa_key_derivation_output_bytes(&op, output_key, output_length);
+    status = psa_key_derivation_output_bytes(&op, (uint8_t*) output_key, output_length);
     if (status != PSA_SUCCESS) {
         goto psa_abort_op;
     }
