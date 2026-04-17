@@ -90,6 +90,9 @@ if (NS_BUILD)
         PRIVATE
             ${IFX_MTB_SRF_LIB_PATH}/source/COMPONENT_NON_SECURE_DEVICE/mtb_srf_pool.c
             ${IFX_MTB_SRF_LIB_PATH}/source/mtb_srf.c
+            ${INTERFACE_SRC_DIR}/ifx_mtb_srf.c
+            # MTB SRF is implemented through IFX Extensions Partition
+            ${INTERFACE_SRC_DIR}/ifx_ext_sp_api.c
     )
 
     target_include_directories(ifx_mtb_srf_int
@@ -105,16 +108,13 @@ if (NS_BUILD)
             ifx_mtb_hal
             ifx_pdl_inc_ns
         PUBLIC
+            # MTB SRF interface relies on CY_RTOS_AWARE definition which is
+            # provided by abstraction rtos library, thus adding it as public
+            # dependency. This will ensure that ifx_abstraction_rtos is linked
+            # in all NSPE binaries and CY_RTOS_AWARE is defined for them.
             ifx_abstraction_rtos
         INTERFACE
             ifx_mtb_srf_int
-    )
-
-    target_sources(tfm_api_ns
-        PRIVATE
-            ${INTERFACE_SRC_DIR}/ifx_mtb_srf.c
-            # MTB SRF is implemented through IFX Extensions Partition
-            ${INTERFACE_SRC_DIR}/ifx_ext_sp_api.c
     )
 
     if(IFX_MTB_MAILBOX)
@@ -127,6 +127,7 @@ if (NS_BUILD)
         target_link_libraries(ifx_mtb_srf_ns
             PUBLIC
                 ifx_mtb_ipc
+                ifx_mtb_mailbox_int
         )
 
         target_sources(tfm_api_ns

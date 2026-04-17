@@ -15,7 +15,6 @@ target_include_directories(platform_s
         ${IFX_COMMON_SOURCE_DIR}/spe/v80m
         ${IFX_FAMILY_SOURCE_DIR}/shared
         ${IFX_FAMILY_SOURCE_DIR}/shared/device/include
-        ${IFX_FAMILY_SOURCE_DIR}/shared/device/config
         ${IFX_FAMILY_SOURCE_DIR}/config
         ${IFX_FAMILY_SOURCE_DIR}/spe
 )

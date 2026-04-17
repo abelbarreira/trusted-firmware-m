@@ -14,6 +14,7 @@
 #if IFX_MTB_MAILBOX && IFX_NS_INTERFACE_TZ
 #include "cmsis.h"
 #include "ifx_mtb_mailbox.h"
+#include "ifx_platform_mailbox.h"
 #include "mtb_srf_ipc.h"
 #include "mtb_srf.h"
 #include "tfm_hal_multi_core.h"

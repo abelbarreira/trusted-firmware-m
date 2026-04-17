@@ -34,8 +34,15 @@ target_sources(platform_ns
         ${IFX_COMMON_SOURCE_DIR}/utils/ifx_regions.c
 )
 
-if(IFX_NS_INTERFACE_MAILBOX)
-    if(IFX_MTB_MAILBOX)
+if(IFX_MTB_MAILBOX)
+    add_library(ifx_mtb_mailbox_int INTERFACE EXCLUDE_FROM_ALL)
+
+    target_include_directories(ifx_mtb_mailbox_int
+        INTERFACE
+            ${INTERFACE_INC_DIR}/ifx_mtb_mailbox
+    )
+
+    if(IFX_NS_INTERFACE_MAILBOX)
         add_library(ifx_mtb_mailbox STATIC EXCLUDE_FROM_ALL)
 
         target_sources(ifx_mtb_mailbox
@@ -51,18 +58,25 @@ if(IFX_NS_INTERFACE_MAILBOX)
                 ifx_mtb_hal
                 ifx_mtb_srf_ns
                 psa_interface
-        )
-
-        target_include_directories(ifx_mtb_mailbox
             PUBLIC
-                ${INTERFACE_INC_DIR}/ifx_mtb_mailbox
+                ifx_mtb_mailbox_int
         )
 
         target_link_libraries(tfm_api_ns
             PUBLIC
                 ifx_mtb_mailbox
         )
-    else()
+    elseif(IFX_NS_INTERFACE_TZ)
+        # When IFX_MTB_MAILBOX is enabled - on core NSPE acts like a proxy for off
+        # core NSPE requests. Thus ifx_mtb_mailbox headers are needed so that on
+        # core NSPE can work with off core NSPE request types.
+        target_link_libraries(tfm_api_ns
+            PUBLIC
+                ifx_mtb_mailbox_int
+        )
+    endif()
+else()
+    if(IFX_NS_INTERFACE_MAILBOX)
         target_sources(platform_ns
             PRIVATE
                 ${INTERFACE_SRC_DIR}/multi_core/platform_ns_mailbox.c
@@ -74,16 +88,6 @@ if(IFX_NS_INTERFACE_MAILBOX)
                 platform_ns
         )
     endif()
-endif()
-
-if(IFX_MTB_MAILBOX AND IFX_NS_INTERFACE_TZ)
-    # When IFX_MTB_MAILBOX is enabled - on core NSPE acts like a proxy for off
-    # core NSPE requests. Thus ifx_mtb_mailbox is added to on core NSPE include
-    # directories so that on core NSPE can work with off core NSPE request types.
-    target_include_directories(tfm_api_ns
-        PUBLIC
-            ${INTERFACE_INC_DIR}/ifx_mtb_mailbox
-    )
 endif()
 
 target_compile_definitions(platform_ns

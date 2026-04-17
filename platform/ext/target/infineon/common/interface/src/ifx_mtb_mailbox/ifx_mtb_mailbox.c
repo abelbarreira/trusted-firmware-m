@@ -121,6 +121,9 @@ int32_t ifx_mtb_mailbox_client_call(uint32_t call_type,
     mtb_hal_system_critical_section_exit(primask);
 #endif /* IFX_MTB_MAILBOX_CACHE_PRESENT */
 
+    /* Copy the reply before freeing the shared request buffer. */
+    *reply = request->reply;
+
     /* Deallocate semaphore */
     sema_dealloc_rslt = mtb_srf_ipc_pool_semaphore_free(cybsp_mtb_srf_client_context.pool,
                                                         sema_idx);
@@ -132,9 +135,6 @@ int32_t ifx_mtb_mailbox_client_call(uint32_t call_type,
         || (req_dealloc_rslt != CY_RSLT_SUCCESS)) {
         return IFX_MTB_MAILBOX_GENERIC_ERROR;
     }
-
-    /* Copy the entire reply structure back so the caller receives all output values. */
-    *reply = request->reply;
 
     return IFX_MTB_MAILBOX_SUCCESS;
 }

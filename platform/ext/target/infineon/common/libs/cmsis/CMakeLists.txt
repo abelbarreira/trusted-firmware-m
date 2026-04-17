@@ -16,6 +16,7 @@ if(NS_BUILD)
         INTERFACE
             ${IFX_CMSIS_LIB_PATH}/Include
             ${IFX_CMSIS_LIB_PATH}/Include/m-profile
+            ${IFX_COMMON_SOURCE_DIR}/device/include
     )
 
     target_link_libraries(tfm_api_ns
