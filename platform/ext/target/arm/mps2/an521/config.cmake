@@ -1,7 +1,5 @@
 #-------------------------------------------------------------------------------
-# Copyright (c) 2020-2025, Arm Limited. All rights reserved.
-# Copyright (c) 2022 Cypress Semiconductor Corporation (an Infineon company)
-# or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
+# SPDX-FileCopyrightText: Copyright The TrustedFirmware-M Contributors
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
@@ -29,3 +27,5 @@ set(MCUBOOT_BUILTIN_KEY               ON               CACHE BOOL      "Use buil
 
 set(TFM_MERGE_HEX_FILES               ON                                              CACHE BOOL   "Create merged hex file in the end of the build")
 set(TFM_S_HEX_FILE_PATH               "${CMAKE_BINARY_DIR}/bin/secure_fw.hex"         CACHE STRING "Merged secure hex file's path")
+
+set(MCUBOOT_IMAGE_NUMBER                2           CACHE STRING    "Whether to combine S and NS into either 1 image, or sign each seperately")
