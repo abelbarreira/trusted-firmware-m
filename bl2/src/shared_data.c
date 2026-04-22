@@ -195,7 +195,7 @@ int boot_save_shared_data(const struct image_header *hdr,
     struct boot_measurement_metadata metadata = {
         .measurement_type = MCUBOOT_HASH_ALG,
         .signer_id = { 0 },
-        .signer_id_size = 0,
+        .signer_id_size = SIGNER_ID_MIN_SIZE,
         .sw_type = "",
         .sw_version = { 0 },
     };
