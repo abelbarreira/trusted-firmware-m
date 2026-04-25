@@ -22,6 +22,16 @@
             }
         },
         {
+            "label": "Build MPS2 AN521 BLX BL2 SPE APP",
+            "type": "process",
+            "command": ".scripts/build_mps2_an521_blx_bl2_spe_app.sh",
+            "options": {
+                "statusbar": {
+                    "hide": false
+                }
+            }
+        },
+        {
             "label": "Start MPS2 AN521 QEMU GDB Server",
             "type": "shell",
             "command": "qemu-system-arm",
@@ -54,6 +64,6 @@
                     "hide": false
                 }
             }
-        },
+        }
     ]
 }
